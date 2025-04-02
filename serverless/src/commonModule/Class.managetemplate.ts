@@ -1468,11 +1468,11 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
 
 
 
-    public getJDumpDetails = async (iTemplateTypeID: any) => {
+    public getJDumpDetails = async (iTemplateTypeID: any, tmplUploadLogId) => {
         try {
             this.FunDCT_setUserID('0001')
             let stream = `/CRON/VALIDATE_TEMPLATE_CONTENT/`
-            const oPendingUpload: any = await this.FunDCT_GetPendingTemplateUpload();
+            const oPendingUpload: any = await this.getTemplateUpload(tmplUploadLogId);
             if (typeof oPendingUpload === 'undefined' || oPendingUpload == false) {
                 return "Files In Progress or No Pending Files";
             }
@@ -1619,6 +1619,34 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
 
             this._oCommonCls.error(oErr.message);
             // process.exit(1);
+        }
+    }
+
+    public getTemplateUpload = async (id: any) => {
+        try {
+            this.FunDCT_setUserID('0001')
+            this.FunDCT_ApiRequest({ baseUrl: '/API/PENDING_TEMPLATE_UPLOAD/' })
+            let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
+            if (!oStatus) {
+                return [];
+            }
+            let iStatusID = oStatus._id;
+            const oPendingUploadLog = await TmplUploadLog.findOne({ _id: id, iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 }).lean() as ITmplUploadLog;
+            if (oPendingUploadLog) {
+                this.FunDCT_SetUploadType('DISTRIBUTE');
+                return oPendingUploadLog;
+            } else {
+                const oPendingMemberUpload = await MemTmplUploadLog.findOne({ _id: id, iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 }).lean() as IMemTmplUploadLog;
+                if (oPendingMemberUpload) {
+                    this.FunDCT_SetUploadType(oPendingMemberUpload.cUploadType);
+                    return oPendingMemberUpload;
+                }
+                else {
+                    return false;
+                }
+            }
+        } catch (err) {
+            this.error(err.message);
         }
     }
 

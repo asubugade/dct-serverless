@@ -26,7 +26,7 @@ import rateLimit from 'express-rate-limit';
 import { getUser, getUserCount } from "./usersDal";
 import Status, { IStatus } from "../../models/GenStatus";
 import { ClsDCT_User } from "../../commonModule/Class.user";
-import { ClsDCT_Common } from "../../commonmodule/Class.common";
+import { ClsDCT_Common } from "../../commonModule/Class.common";
 
 const oMimeType = require('mime-types');
 
