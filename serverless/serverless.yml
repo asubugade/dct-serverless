@@ -1514,6 +1514,19 @@ functions:
 
 
 
+# Common Utility Modules Routes
+
+  downloadS3File:
+      handler: src/modules/commonUtilityModule/handler.downloadS3FileHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/downloadS3File
+            method: post
+            cors: true
+
+
+
 
 #Python API
 
