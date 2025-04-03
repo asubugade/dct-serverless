@@ -2,14 +2,14 @@ import { ClsDCT_Common } from "../../commonModule/Class.common";
 import HttpStatusCodes from "http-status-codes";
 import TemplateType, { ITemplateType } from "../../models/GenTemplateType";
 import Template, { ITemplate } from "../../models/GenTemplate";
-import { getTemplate, getTemplateCount, getTemplateNoTimer, getTemplateTimer } from "./listTemplateDal";
+import { getMemberUploadLog, getMemberUploadLogCount, getTemplate, getTemplateCount, getTemplateNoTimer, getTemplateTimer } from "./listTemplateDal";
 import moment from "moment";
 import TmplUploadLog, { ITmplUploadLog } from "../../models/Tmpluploadlog"
 
+
+
+
 var mongoose = require('mongoose')
-
-
-
 
 export class ListTemplateService {
   private _oCommonCls = new ClsDCT_Common();
@@ -689,143 +689,232 @@ export class ListTemplateService {
   }
 
   public downloadSampleTemplate = async (event) => {
-  try {
-    const body = JSON.parse(event.body);
-    const { iTemplateID, cProcessCode } = body;
-    const aRequestDetails = { iTemplateID, cProcessCode };
-    const cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN'];
+    try {
+      const body = JSON.parse(event.body);
+      const { iTemplateID, cProcessCode } = body;
+      const aRequestDetails = { iTemplateID, cProcessCode };
+      const cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN'];
 
-    this._oCommonCls.FunDCT_ApiRequest(event);
-    await this._oCommonCls.FunDCT_SetCurrentUserDetails(cToken);
+      this._oCommonCls.FunDCT_ApiRequest(event);
+      await this._oCommonCls.FunDCT_SetCurrentUserDetails(cToken);
 
-    let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
-    let cUserType = oCurrentUserType[0].cAccessCode;
-    let cCompanyname: string = this._oCommonCls.oCurrentUserDetails.cCompanyname;
+      let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
+      let cUserType = oCurrentUserType[0].cAccessCode;
+      let cCompanyname: string = this._oCommonCls.oCurrentUserDetails.cCompanyname;
 
-    let downloadPath;
-    if (cUserType == 'Member' || aRequestDetails.cProcessCode == 'MEMBER_TEMPLATE_LIST') {
-      const oUploadlogs = await TmplUploadLog.findOne({
-        iTemplateID: { $in: [new mongoose.Types.ObjectId(iTemplateID)] },
-        iActiveStatus: 0,
-      }).sort({ _id: -1 });
+      let downloadPath;
+      if (cUserType == 'Member' || aRequestDetails.cProcessCode == 'MEMBER_TEMPLATE_LIST') {
+        const oUploadlogs = await TmplUploadLog.findOne({
+          iTemplateID: { $in: [new mongoose.Types.ObjectId(iTemplateID)] },
+          iActiveStatus: 0,
+        }).sort({ _id: -1 });
 
-      if (oUploadlogs) {
-        for (let obj in oUploadlogs.cDistributionDetails) {
-          if (oUploadlogs.cDistributionDetails[obj].cDistScaccode == cCompanyname) {
-            downloadPath = oUploadlogs.cDistributionDetails[obj].cMemberDistributionFilePath;
-            break;
+        if (oUploadlogs) {
+          for (let obj in oUploadlogs.cDistributionDetails) {
+            if (oUploadlogs.cDistributionDetails[obj].cDistScaccode == cCompanyname) {
+              downloadPath = oUploadlogs.cDistributionDetails[obj].cMemberDistributionFilePath;
+              break;
+            }
           }
         }
       }
-    }
 
-    let oTemplate = (await Template.findOne({ _id: iTemplateID }).lean()) as ITemplate;
-    if (!downloadPath && oTemplate) {
-      downloadPath = oTemplate.cTemplateSampleFile;
-    }
+      let oTemplate = (await Template.findOne({ _id: iTemplateID }).lean()) as ITemplate;
+      if (!downloadPath && oTemplate) {
+        downloadPath = oTemplate.cTemplateSampleFile;
+      }
 
-    const oFileStream: any = await this._oCommonCls.FunDCT_DownloadS3File(downloadPath);
+      const oFileStream: any = await this._oCommonCls.FunDCT_DownloadS3File(downloadPath);
 
-    if (oFileStream) {
+      if (oFileStream) {
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${iTemplateID}.xlsx"`,
+          },
+          body: oFileStream,
+          isBase64Encoded: true,
+        };
+      }
+
       return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': `attachment; filename="${iTemplateID}.xlsx"`,
-        },
-        body: oFileStream,
-        isBase64Encoded: true,
+        statusCode: 404,
+        body: JSON.stringify({ message: 'File not found' }),
+      };
+    } catch (error) {
+      console.error('Error:', error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: error.message }),
       };
     }
+  };
 
-    return {
-      statusCode: 404,
-      body: JSON.stringify({ message: 'File not found' }),
-    };
-  } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
-  }
-};
+  public getTemplateWithMetadata = async (event) => {
+    try {
 
-
-public getTemplateWithMetadata = async(event) => {
-  try {
-
-    const { iTemplateID } = JSON.parse(event.body);
-    const oDocuments = await Template.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(iTemplateID) } },
-      {
-        $lookup: {
-          from: "gen_statuses",
-          localField: "iStatusID",
-          foreignField: "_id",
-          as: "oTemplateListing"
+      const { iTemplateID } = JSON.parse(event.body);
+      const oDocuments = await Template.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(iTemplateID) } },
+        {
+          $lookup: {
+            from: "gen_statuses",
+            localField: "iStatusID",
+            foreignField: "_id",
+            as: "oTemplateListing"
+          },
         },
-      },
-      { $unwind: "$oTemplateListing" },
-      {
-        $lookup: {
-          from: "tmpl_metadatas",
-          localField: "_id",
-          foreignField: "iTemplateID",
-          as: "oTemplateMetaDataListing"
+        { $unwind: "$oTemplateListing" },
+        {
+          $lookup: {
+            from: "tmpl_metadatas",
+            localField: "_id",
+            foreignField: "iTemplateID",
+            as: "oTemplateMetaDataListing"
+          },
         },
-      },
-      { $unwind: "$oTemplateMetaDataListing" },
-      {
-        $project: {
-          _id: 1,
-          cTemplateName: 1,
-          cTemplateType: 1,
-          cTemplateSampleFile: 1,
-          iTempActiveStatus: 1,
-          date: 1,
-          iStatusID: 1,
-          iEnteredby: 1,
-          tEntered: 1,
-          iUpdatedby: 1,
-          oTemplateListing: 1,
-          tUpdated: 1,
-          'oTemplateMetaDataListing._id': 1,
-          'oTemplateMetaDataListing.aAdditionalConfiguration': 1,
-          // 'oTemplateMetaDataListing.aConsolidationData': 1,
-          // 'oTemplateMetaDataListing.aMappedColumns': 1,
-          'oTemplateMetaDataListing.aMappedScacColumnsStat': 1,
-          'oTemplateMetaDataListing.aMemberCutoffs': 1,
-          'oTemplateMetaDataListing.aTemplateHeader': 1,
-          'oTemplateMetaDataListing.aUnMappedColumns': 1,
-          'oTemplateMetaDataListing.cAdditionalEmail': 1,
-          'oTemplateMetaDataListing.cConsolidation': 1,
-          'oTemplateMetaDataListing.cAddtionalFile': 1,
-          'oTemplateMetaDataListing.cDistributionStatus': 1,
-          'oTemplateMetaDataListing.iRedistributedIsUploaded': 1,
-          'oTemplateMetaDataListing.cEmailFrom': 1,
-          'oTemplateMetaDataListing.cEmailSubject': 1,
-          'oTemplateMetaDataListing.cEmailTemplateID': 1,
-          'oTemplateMetaDataListing.cEmailText': 1,
-          'oTemplateMetaDataListing.cGenerated': 1,
-          'oTemplateMetaDataListing.cHeaderType': 1,
-          'oTemplateMetaDataListing.iEnteredby': 1,
-          'oTemplateMetaDataListing.iMaxDepthHeaders': 1,
-          'oTemplateMetaDataListing.startHeaderRowIndex': 1,
-          'oTemplateMetaDataListing.iTemplateID': 1,
-          'oTemplateMetaDataListing.tCuttoffdate': 1,
-          'oTemplateMetaDataListing.tEntered': 1
-        }
-      }, 
-    ]);//Call back removed
+        { $unwind: "$oTemplateMetaDataListing" },
+        {
+          $project: {
+            _id: 1,
+            cTemplateName: 1,
+            cTemplateType: 1,
+            cTemplateSampleFile: 1,
+            iTempActiveStatus: 1,
+            date: 1,
+            iStatusID: 1,
+            iEnteredby: 1,
+            tEntered: 1,
+            iUpdatedby: 1,
+            oTemplateListing: 1,
+            tUpdated: 1,
+            'oTemplateMetaDataListing._id': 1,
+            'oTemplateMetaDataListing.aAdditionalConfiguration': 1,
+            // 'oTemplateMetaDataListing.aConsolidationData': 1,
+            // 'oTemplateMetaDataListing.aMappedColumns': 1,
+            'oTemplateMetaDataListing.aMappedScacColumnsStat': 1,
+            'oTemplateMetaDataListing.aMemberCutoffs': 1,
+            'oTemplateMetaDataListing.aTemplateHeader': 1,
+            'oTemplateMetaDataListing.aUnMappedColumns': 1,
+            'oTemplateMetaDataListing.cAdditionalEmail': 1,
+            'oTemplateMetaDataListing.cConsolidation': 1,
+            'oTemplateMetaDataListing.cAddtionalFile': 1,
+            'oTemplateMetaDataListing.cDistributionStatus': 1,
+            'oTemplateMetaDataListing.iRedistributedIsUploaded': 1,
+            'oTemplateMetaDataListing.cEmailFrom': 1,
+            'oTemplateMetaDataListing.cEmailSubject': 1,
+            'oTemplateMetaDataListing.cEmailTemplateID': 1,
+            'oTemplateMetaDataListing.cEmailText': 1,
+            'oTemplateMetaDataListing.cGenerated': 1,
+            'oTemplateMetaDataListing.cHeaderType': 1,
+            'oTemplateMetaDataListing.iEnteredby': 1,
+            'oTemplateMetaDataListing.iMaxDepthHeaders': 1,
+            'oTemplateMetaDataListing.startHeaderRowIndex': 1,
+            'oTemplateMetaDataListing.iTemplateID': 1,
+            'oTemplateMetaDataListing.tCuttoffdate': 1,
+            'oTemplateMetaDataListing.tEntered': 1
+          }
+        },
+      ]);//Call back removed
 
-    if (oDocuments) {
-      return await this._oCommonCls.FunDCT_Handleresponse('Success', 'LIST_TEMPLATE', 'TEMPLATE_LISTED', 200, oDocuments);
+      if (oDocuments) {
+        return await this._oCommonCls.FunDCT_Handleresponse('Success', 'LIST_TEMPLATE', 'TEMPLATE_LISTED', 200, oDocuments);
+      }
+    } catch (err) {
+      return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
     }
-  } catch (err) {
-    return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
   }
-}
 
+  public getMemberUploadLogListing = async (event) => {
+    try {
+
+      const { iOffset, iLimit, iOffsetLimit, cSearchFilter, cSort, cSortOrder, iTemplateID } = JSON.parse(event.body);
+      const aRequestDetails = { iOffset, iLimit, iOffsetLimit, cSearchFilter, cSort, cSortOrder };
+
+      //code added by mpatil
+      const cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN']
+      await this._oCommonCls.FunDCT_SetCurrentUserDetails(cToken);
+      this._oCommonCls.FunDCT_ApiRequest(event)
+      let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
+      let type = oCurrentUserType[0].cAccessCode;
+
+      let cCompanyname = this._oCommonCls.oCurrentUserDetails.cCompanyname;
+      let cMemberCond: any;
+      if (type == 'Member') {
+        cMemberCond = { cScacCode: { $in: [cCompanyname] } };
+      } else {
+        cMemberCond = {}
+      }
+      let cSearchFilterQuery: any = {
+        $match: {
+          iTempActiveStatus: 0
+        }
+      };
+      if (aRequestDetails.cSearchFilter) {
+        // on 169 line cSearchFilterQuery added by spirgonde for member upload log searchfilter task
+        cSearchFilterQuery = { $match: { $or: [{ "cScacCode": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }, { "cTemplateName": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }], $and: [cMemberCond] } };
+      } else {// code added by spirgonde for member upload log searchfilter  task start
+        if (type == 'Member') {
+          // cSearchFilterQuery = { $match: { "cScacCode": cCompanyname }, { iTemplateID: new mongoose.Types.ObjectId(iTemplateID) } };
+          cSearchFilterQuery = {
+            $match: {
+              $and: [
+                { "cScacCode": cCompanyname },
+                { iTemplateID: new mongoose.Types.ObjectId(iTemplateID) },]
+            }
+          };
+        } else {
+          cSearchFilterQuery = {
+            $match: {
+              $and: [
+                { iTemplateID: new mongoose.Types.ObjectId(iTemplateID) },]
+            }
+          };
+        }
+      }
+
+      let oSort = {};
+      if (aRequestDetails.cSort) {
+        oSort[aRequestDetails.cSort] = aRequestDetails.cSortOrder;
+      } else {
+        oSort['_id'] = -1;
+      }
+      let iCount: number = await getMemberUploadLogCount(cSearchFilterQuery);
+      if (iCount > 0) {
+        let oMemberUploadLogs: any = await getMemberUploadLog(aRequestDetails, oSort, cSearchFilterQuery, iCount, iTemplateID);
+        if (oMemberUploadLogs) {
+          let oMemberUploadLogRes = {
+            total: iCount,
+            page: aRequestDetails.iOffset,
+            pageSize: aRequestDetails.iLimit,
+            aModuleDetails: oMemberUploadLogs
+          };
+          return await this._oCommonCls.FunDCT_Handleresponse('Success', 'LIST_TEMPLATE', 'TEMPLATE_LISTED', 200, oMemberUploadLogRes);
+        }
+        else {
+          let oMemberUploadLogRes = {
+            total: 0,
+            page: 0,
+            pageSize: aRequestDetails.iLimit,
+            aModuleDetails: []
+          };
+          return await this._oCommonCls.FunDCT_Handleresponse('Success', 'LIST_TEMPLATE', 'TEMPLATE_LISTED', 200, oMemberUploadLogRes);
+        }
+      } else {
+        let oMemberUploadLogRes = {
+          total: 0,
+          page: 0,
+          pageSize: aRequestDetails.iLimit,
+          aModuleDetails: []
+        };
+        return await this._oCommonCls.FunDCT_Handleresponse('Success', 'LIST_TEMPLATE', 'TEMPLATE_LISTED', 200, oMemberUploadLogRes);
+      }
+
+    }
+    catch (err) {
+      return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'SERVER_ERROR');
+    }
+  }
 
 }

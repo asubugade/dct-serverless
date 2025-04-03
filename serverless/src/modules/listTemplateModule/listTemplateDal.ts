@@ -3,8 +3,11 @@ import Template from "../../models/GenTemplate";
 import moment from "moment";
 import TmplConsolidationReq from "../../models/TmplConsolidationReq";
 import AdditionalFields from "../../models/Additionalfields";
+import MemTmplUploadLog from "../../models/MemTmplUploadLog";
 
 const _oCommonCls = new ClsDCT_Common();
+var mongoose = require('mongoose')
+
 
 export const getTemplateCount = async (cSearchFilterQuery: any, cDateQuery: any, templateTypeArray: any) => {
     try {
@@ -53,7 +56,7 @@ export const getTemplateCount = async (cSearchFilterQuery: any, cDateQuery: any,
     }
 }
 
-export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any , companyname:any) => {
+export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any, companyname: any) => {
     let iLimitDynamic: number = 1;
     if (aRequestDetails.iLimit <= 0 && iCount > 0) {
         iLimitDynamic = iCount;
@@ -250,7 +253,7 @@ const getConsolidationData = async (doc) => {
     }
 }
 
-export const getTemplateTimer = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any,companyname:any) => {
+export const getTemplateTimer = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any, companyname: any) => {
     let iLimitDynamic: number = (aRequestDetails.iLimit > 0) ? aRequestDetails.iLimit : (iCount > 0 ? iCount : 1);
 
     // Aggregate the documents without pagination first
@@ -415,7 +418,7 @@ const getAdditionConfigData = async (doc) => {
     }
 }
 
-export const getTemplateNoTimer = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any , companyname:any) => {
+export const getTemplateNoTimer = async (aRequestDetails: any, oSort: any, cSearchFilterQuery: any, iCount: number, cDateQuery: any, cUserType: any, templateTypeArray: any, companyname: any) => {
     let iLimitDynamic: number = (aRequestDetails.iLimit > 0) ? aRequestDetails.iLimit : (iCount > 0 ? iCount : 1);
 
     const oDocuments = await Template.aggregate([
@@ -559,5 +562,110 @@ export const getTemplateNoTimer = async (aRequestDetails: any, oSort: any, cSear
     }
 
 
+}
+
+export const getMemberUploadLogCount = async (cSearchFilterQuery) => {
+    try {
+        const countAggregatePipeline = [
+            cSearchFilterQuery,
+            {
+                $match: {
+                    iActiveStatus: 0
+                }
+            },
+            {
+                $lookup: {
+                    from: "gen_statuses",
+                    localField: "iStatusID",
+                    foreignField: "_id",
+                    as: "oMemberUploadLogListing"
+                }
+            },
+            { $unwind: "$oMemberUploadLogListing" },
+            {
+                $group: {
+                    _id: null,
+                    count: { $sum: 1 }
+                }
+            }
+        ];
+        const countResult = await MemTmplUploadLog.aggregate(countAggregatePipeline);
+        if (countResult.length > 0) {
+            return countResult[0].count;
+        } else {
+            return 0; // No matching records found
+        }
+    }
+    catch (err) {
+        _oCommonCls.log(err)
+    }
+}
+
+export const getMemberUploadLog = async (aRequestDetails, oSort, cSearchFilterQuery, iCount, iTemplateID) => {
+
+    let iLimitDynamic: number;
+    if (aRequestDetails.iLimit <= 0 && iCount > 0) {
+        iLimitDynamic = iCount;
+    } else {
+        iLimitDynamic = aRequestDetails.iLimit;
+    }
+    const recordFound = await MemTmplUploadLog.find({ iTemplateID: { $in: [new mongoose.Types.ObjectId(iTemplateID)] }, iActiveStatus: 0 });
+
+    if (recordFound.length) {
+        try {
+            const oDocuments = await MemTmplUploadLog.aggregate([
+                cSearchFilterQuery,
+                {
+                    $match: {
+                        iActiveStatus: 0
+                    }
+                },
+                // { $match: { iTemplateID: new mongoose.Types.ObjectId(iTemplateID) } },
+                {
+                    $lookup: {
+                        from: "gen_members",
+                        localField: "iMemberID",
+                        foreignField: "_id",
+                        as: "oMemberDetailListing"
+                    }
+                },
+                // { $unwind: "$oMemberDetailListing" },
+
+                /* In below block of code $unwind is modified by adding "path" and "preserveNullAndEmptyArrays": true ,so that if "iMemberID" 
+                is not found in collection then preiviously aggregated collection can be returned  */
+                {
+                    "$unwind": {
+                        "path": "$oMemberDetailListing",
+                        "preserveNullAndEmptyArrays": true
+                    }
+                },
+                //code added by spirgonde for changing entered by  and Updated By from Id to user name  end .  
+                {
+                    $lookup: {
+                        from: "gen_users",
+                        localField: "iEnteredby",
+                        foreignField: "_id",
+                        as: "oUserDetailListing"
+                    }
+                },
+                /* In below block of code $unwind is modified by adding "path" and "preserveNullAndEmptyArrays": true ,so that if "iEnteredby" 
+                 is not found in collection then preiviously aggregated collection can be returned  */
+                {
+                    "$unwind": {
+                        "path": "$oUserDetailListing",
+                        "preserveNullAndEmptyArrays": true
+                    }
+                },
+                //code added by spirgonde for changing entered by  and Updated By from Id to user name  end .  
+                { $sort: oSort },
+                { $skip: aRequestDetails.iOffsetLimit },
+                { $limit: iLimitDynamic },
+            ]);
+            return oDocuments;
+        } catch (err) { return false }
+
+    } else {
+        return false;
+    }
 }
 

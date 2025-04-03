@@ -163,7 +163,7 @@ functions:
             resultTtlInSeconds: 0
             type: request
 
-  deleteTemplate:
+  deleteTemplateType:
     handler: src/modules/templateTypeModule/handler.deleteTemplateHandler
     timeout: 900
     events:
@@ -272,6 +272,20 @@ functions:
     events:
       - http:
           path: api/listtemplate/getTemplateDetails
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  getMemberUploadLog:
+    handler: src/modules/listTemplateModule/handler.getMemberUploadLogHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/getmemberuploadlog
           method: post
           cors: true
           authorizer:
@@ -1451,6 +1465,20 @@ functions:
         - http:
             path: api/createtemplate/add
             method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+  deleteTemplate:
+      handler: src/modules/createTemplateModule/handler.deleteTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/createtemplate/{id}
+            method: delete
             cors: true
             authorizer:
               name: GetValidatePermission

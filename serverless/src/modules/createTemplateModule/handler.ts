@@ -62,3 +62,21 @@ module.exports.addTemplateHandler = async (event, context, callback) => {
     callback(null, response);
   }
 };
+
+
+module.exports.deleteTemplateHandler = async (event, context, callback) => {
+  let response;
+  try {
+      context.callbackWaitsForEmptyEventLoop = false;
+      await oConnectDB();
+      response = await createTemplateService.templateDelete(event);
+      callback(null, response);
+
+  } catch (error) {
+      response = {
+          statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+          body: JSON.stringify({ error: error.message }),
+      };
+      callback(null, response);
+  }
+};

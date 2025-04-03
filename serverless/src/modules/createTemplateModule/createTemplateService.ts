@@ -60,7 +60,6 @@ export class CreateTemplateService {
   }
 
 
-
   public excelToJSON = async (event, formData) => {
     try {
       this._oManageTemplateCls._oGetValidationRulesDetails = await TemplateValidation.find();
@@ -202,10 +201,6 @@ export class CreateTemplateService {
   }
 
 
-
-
-
-
   private FunDCT_TemplateAddUpdate = async (event) => {
     try {
       const body = JSON.parse(event.body);
@@ -288,8 +283,7 @@ export class CreateTemplateService {
   }
 
 
-
-  private async FunDCT_CreateSampleTemplateFile(oTemplates: any, oTemplateMetaData: any, event) {
+  private FunDCT_CreateSampleTemplateFile = async (oTemplates: any, oTemplateMetaData: any, event) => {
     try {
       this._oManageTemplateCls.FunDCT_setTemplateID(oTemplates._id);
       const oTemplateSampleFile: any = await this._oManageTemplateCls.FunDCT_createTemplateSampleFile(oTemplates, oTemplateMetaData); //Working
@@ -333,4 +327,20 @@ export class CreateTemplateService {
       return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'SERVER_ERROR');
     }
   }
+
+
+  public templateDelete = async (event) => {
+    let oTemplate = await Template.findOne({ _id: event.pathParameters.id }).lean() as ITemplate;
+    await TmplMetaData.findOne({ iTemplateID: event.pathParameters.id }).lean() as ITmplMetaData;
+
+    if (oTemplate) {
+
+      await Template.updateOne({ _id: event.pathParameters.id }, { $set: { iTempActiveStatus: -1 } });
+
+      return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CREATE_TEMPLATE', 'TEMPLATE_DELETED', 200, event.pathParameters.id);
+    } else {
+      return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'Error : TEMPLATE_DELETION ');
+    }
+  }
 }
+
