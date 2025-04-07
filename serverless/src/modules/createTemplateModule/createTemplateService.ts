@@ -220,10 +220,10 @@ export class CreateTemplateService {
 
       const aRequestDetails = { cTemplateName, cTemplateType, iStatusID: oStatus._id, iTempActiveStatus, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date() };
 
-      let oTemplates = await Template.findOne({ cTemplateName: cTemplateName }).lean() as ITemplate;
+      let oTemplates = await Template.findOne({ cTemplateName: cTemplateName }).lean() as any;
       if (oTemplates) {
         // Update
-        aRequestDetails.iTempActiveStatus = oTemplates['_doc'].iTempActiveStatus
+        aRequestDetails.iTempActiveStatus = oTemplates.iTempActiveStatus
         oTemplates = await Template.findOneAndUpdate(
           { cTemplateName: cTemplateName },
           { $set: aRequestDetails },

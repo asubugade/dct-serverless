@@ -868,7 +868,6 @@ functions:
   additionalFieldsList:
       handler: src/modules/additionalFieldsModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/additionalfields/list
@@ -884,7 +883,6 @@ functions:
   addAdditionalFields:
       handler: src/modules/additionalFieldsModule/handler.addAdditionalFieldsHandler
       timeout: 900
-
       events:
         - http:
             path: api/additionalfields/add
@@ -900,7 +898,6 @@ functions:
   updateAdditionalFields:
       handler: src/modules/additionalFieldsModule/handler.updateAdditionalFieldsHandler
       timeout: 900
-
       events:
         - http:
             path: api/additionalfields/{id}
@@ -916,7 +913,6 @@ functions:
   deleteAdditionalFields:
       handler: src/modules/additionalFieldsModule/handler.deleteAdditionalFieldsHandler
       timeout: 900
-
       events:
         - http:
             path: api/additionalfields/{id}
@@ -934,7 +930,6 @@ functions:
   regionList:
       handler: src/modules/regionModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/region/list
@@ -950,7 +945,6 @@ functions:
   addRegion:
       handler: src/modules/regionModule/handler.addRegionHandler
       timeout: 900
-
       events:
         - http:
             path: api/region/add
@@ -966,7 +960,6 @@ functions:
   updateRegion:
       handler: src/modules/regionModule/handler.updateRegionHandler
       timeout: 900
-
       events:
         - http:
             path: api/region/{id}
@@ -982,7 +975,6 @@ functions:
   deleteRegion:
       handler: src/modules/regionModule/handler.deleteRegionHandler
       timeout: 900
-
       events:
         - http:
             path: api/region/{id}
@@ -1000,7 +992,6 @@ functions:
   countryList:
       handler: src/modules/countryModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/country/list
@@ -1015,7 +1006,6 @@ functions:
   addCountry:
       handler: src/modules/countryModule/handler.addCountryHandler
       timeout: 900
-
       events:
         - http:
             path: api/country/add
@@ -1030,7 +1020,6 @@ functions:
   updateCountry:
       handler: src/modules/countryModule/handler.updateCountryHandler
       timeout: 900
-
       events:
         - http:
             path: api/country/{id}
@@ -1045,7 +1034,6 @@ functions:
   deleteCountry:
       handler: src/modules/countryModule/handler.deleteCountryHandler
       timeout: 900
-
       events:
         - http:
             path: api/country/{id}
@@ -1063,7 +1051,6 @@ functions:
   locationList:
       handler: src/modules/locationModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/location/list
@@ -1078,7 +1065,6 @@ functions:
   addLocation:
       handler: src/modules/locationModule/handler.addLocationHandler
       timeout: 900
-
       events:
         - http:
             path: api/location/add
@@ -1093,7 +1079,6 @@ functions:
   updateLocation:
       handler: src/modules/locationModule/handler.updateLocationHandler
       timeout: 900
-
       events:
         - http:
             path: api/location/{id}
@@ -1108,7 +1093,6 @@ functions:
   deleteLocation:
       handler: src/modules/locationModule/handler.deleteLocationHandler
       timeout: 900
-
       events:
         - http:
             path: api/location/{id}
@@ -1126,7 +1110,6 @@ functions:
   currencyList:
       handler: src/modules/currencyModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/currency/list
@@ -1141,7 +1124,6 @@ functions:
   addCurrency:
       handler: src/modules/currencyModule/handler.addCurrencyHandler
       timeout: 900
-
       events:
         - http:
             path: api/currency/add
@@ -1156,7 +1138,6 @@ functions:
   updateCurrency:
       handler: src/modules/currencyModule/handler.updateCurrencyHandler
       timeout: 900
-
       events:
         - http:
             path: api/currency/{id}
@@ -1171,7 +1152,6 @@ functions:
   deleteCurrency:
       handler: src/modules/currencyModule/handler.deleteCurrencyHandler
       timeout: 900
-
       events:
         - http:
             path: api/currency/{id}
@@ -1190,7 +1170,6 @@ functions:
   chargeCodeList:
       handler: src/modules/chargeCodeModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/chargecode/list
@@ -1205,7 +1184,6 @@ functions:
   addChargeCode:
       handler: src/modules/chargeCodeModule/handler.addChargeCodeHandler
       timeout: 900
-
       events:
         - http:
             path: api/chargecode/add
@@ -1220,7 +1198,6 @@ functions:
   updateChargeCode:
       handler: src/modules/chargeCodeModule/handler.updateChargeCodeHandler
       timeout: 900
-
       events:
         - http:
             path: api/chargecode/{id}
@@ -1235,7 +1212,6 @@ functions:
   deleteChargeCode:
       handler: src/modules/chargeCodeModule/handler.deleteChargeCodeHandler
       timeout: 900
-
       events:
         - http:
             path: api/chargecode/{id}
@@ -1253,7 +1229,6 @@ functions:
   rateBasisList:
       handler: src/modules/rateBasisModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/ratebasis/list
@@ -1268,7 +1243,6 @@ functions:
   addRateBasis:
       handler: src/modules/rateBasisModule/handler.addRateBasisHandler
       timeout: 900
-
       events:
         - http:
             path: api/ratebasis/add
@@ -1283,7 +1257,6 @@ functions:
   updateRateBasis:
       handler: src/modules/rateBasisModule/handler.updateRateBasisHandler
       timeout: 900
-
       events:
         - http:
             path: api/ratebasis/{id}
@@ -1298,7 +1271,6 @@ functions:
   deleteRateBasis:
       handler: src/modules/rateBasisModule/handler.deleteRateBasisHandler
       timeout: 900
-
       events:
         - http:
             path: api/ratebasis/{id}
@@ -1317,7 +1289,6 @@ functions:
   carrierList:
       handler: src/modules/carrierModule/handler.listHandler
       timeout: 900
-
       events:
         - http:
             path: api/carrier/list
@@ -1332,7 +1303,6 @@ functions:
   addCarrier:
       handler: src/modules/carrierModule/handler.addCarrierHandler
       timeout: 900
-
       events:
         - http:
             path: api/carrier/add
@@ -1347,7 +1317,6 @@ functions:
   updateCarrier:
       handler: src/modules/carrierModule/handler.updateCarrierHandler
       timeout: 900
-
       events:
         - http:
             path: api/carrier/{id}
@@ -1362,7 +1331,6 @@ functions:
   deleteCarrier:
       handler: src/modules/carrierModule/handler.deleteCarrierHandler
       timeout: 900
-
       events:
         - http:
             path: api/carrier/{id}
@@ -1379,8 +1347,7 @@ functions:
 
   customerList:
         handler: src/modules/customerModule/handler.listHandler
-        timeout: 900
-  
+        timeout: 900  
         events:
           - http:
               path: api/customer/list
@@ -1395,7 +1362,6 @@ functions:
   addCustomer:
       handler: src/modules/customerModule/handler.addCustomerHandler
       timeout: 900
-
       events:
         - http:
             path: api/customer/add
@@ -1410,7 +1376,6 @@ functions:
   updateCustomer:
       handler: src/modules/customerModule/handler.updateCustomerHandler
       timeout: 900
-
       events:
         - http:
             path: api/customer/{id}
@@ -1425,7 +1390,6 @@ functions:
   deleteCustomer:
       handler: src/modules/customerModule/handler.deleteCustomerHandler
       timeout: 900
-
       events:
         - http:
             path: api/customer/{id}
@@ -1444,7 +1408,6 @@ functions:
   excelToJson:
       handler: src/modules/createTemplateModule/handler.excelToJsonHandler
       timeout: 900
-
       events:
         - http:
             path: api/createtemplate/exceltojson
@@ -1460,7 +1423,6 @@ functions:
   addCreateTemplates:
       handler: src/modules/createTemplateModule/handler.addTemplateHandler
       timeout: 900
-
       events:
         - http:
             path: api/createtemplate/add
