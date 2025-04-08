@@ -1516,10 +1516,112 @@ functions:
             cors: true
 
 
+  listExport:
+      handler: src/modules/commonUtilityModule/handler.listExportHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/sheet
+            method: post
+            cors: true
+
+
+# Member Submission Module Routes
+
+  memberSubmissionlist:
+      handler: src/modules/memberSubmissionModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  memberSubmissionFind:
+      handler: src/modules/memberSubmissionModule/handler.memberSubmissionFindHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/find
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  downloadMemberSubmission:
+      handler: src/modules/memberSubmissionModule/handler.downloadMemberSubmissionHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/downloadMemberSubmission
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+#Consolidate Template Module Routes
+
+  consolidateTemplateList:
+      handler: src/modules/consolidateTemplateModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  consolidateTemplateFind:
+      handler: src/modules/consolidateTemplateModule/handler.consolidateTemplateFindHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/find
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  downloadConsolidateReport:
+      handler: src/modules/consolidateTemplateModule/handler.downloadConsolidateReportHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/downloadConsolidateReport
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
 
 
 #Python API
-
 
   validatePython:
       handler: src/python/validateUploadTemplate.handler  # Points to Python code
@@ -1540,6 +1642,18 @@ functions:
       events:
         - http:
             path: api/createfiles
+            method: post
+            cors: true
+
+
+
+  exportListingPython:
+      handler: src/python/exportListing.handler  # Points to Python code
+      runtime: python3.9  # Python runtime
+      timeout: 900
+      events:
+        - http:
+            path: api/exportlisting
             method: post
             cors: true
 

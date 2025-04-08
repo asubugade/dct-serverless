@@ -30,6 +30,8 @@ import GenMember, { IMember } from "../models/GenMember";
 import { model } from 'mongoose';
 import { cloudWatchClass } from "../middleware/cloudWatchLogger";
 const BufferReader = require('buffer-reader');
+import axios from 'axios';
+
 export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cRandomUnique: string;//used for general random string
 
@@ -197,7 +199,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
 
             }
         } catch (oErr) {
-        ;
+            ;
 
             this.error(oErr.message);
             // process.exit(1);
@@ -284,7 +286,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public async FunDCT_SetCurrentUserDetails(cToken: any) {
         try {
             const oPayload: Payload | any = oJwt.verify(cToken, this.cJwtSecret);
-            let oCurrentUserDetails: IUser = await User.findOne({ _id: oPayload._id });
+            let oCurrentUserDetails = await User.findOne({ _id: oPayload._id }).lean() as any;
             this.FunDCT_SetAccessType(oCurrentUserDetails.iAccessTypeID);//added by stewari
             this.FunDCT_setEmail(oCurrentUserDetails.cEmail);
             this.FunDCT_setUserID(oCurrentUserDetails._id);
@@ -302,7 +304,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      */
     public async FunDCT_SetCurrentUserDetailsByID(cId) {
         try {
-            let oCurrentUserDetails: IUser = await User.findOne({ '_id': new mongoose.Types.ObjectId(cId) });
+            let oCurrentUserDetails = await User.findOne({ '_id': new mongoose.Types.ObjectId(cId) }).lean() as any;
 
             this.FunDCT_setEmail(oCurrentUserDetails.cEmail);
             this.FunDCT_setUserID(oCurrentUserDetails._id);
@@ -320,7 +322,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      */
     public async FunDCT_SetMemberDetailsByScac(cScac) {
         try {
-            let oMemberDetails: IMember = await GenMember.findOne({ 'cScac': cScac });
+            let oMemberDetails = await GenMember.findOne({ 'cScac': cScac }).lean() as any;
             this.FunDCT_SetScac(oMemberDetails.cScac);
             this.FunDCT_SetMemberID(oMemberDetails._id);
             this.FunDCT_SetMembername(oMemberDetails.cName);
@@ -827,15 +829,16 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      * To Export File
      * @returns 
      */
-    public async FunDCT_exportDetails(cSearchFilterQuery, oSort, oReq, cTemplateTypes) {
+    public async FunDCT_exportDetails(cSearchFilterQuery, oSort, event, cTemplateTypes) {
         try {
-            this.FunDCT_ApiRequest(oReq)
-            const cTokenNew = oReq.header("x-wwadct-token");
+            this.FunDCT_ApiRequest(event)
+            const cTokenNew = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN'];
+
             const oPayload: Payload | any = oJwt.verify(cTokenNew, this.cJwtSecret);
-            let oCurrentUserDetails: IUser = await User.findOne({ _id: oPayload._id });
+            let oCurrentUserDetails = await User.findOne({ _id: oPayload._id }).lean() as IUser;
             let userId = oCurrentUserDetails._id
             this._cFileExportName = 'List' + '-' + Date.now() + '.xlsx';
-            fs.writeFileSync(this.cDirExportListing + this._cFileExportName, '')
+            // fs.writeFileSync(this.cDirExportListing + this._cFileExportName, '')
             let aSchemafiltered = await this.FunDCT_getExportSchema(this.cType)
             let aStaticHeader = await this.FuncDCT_ExportStaticHeader(this.cType);
 
@@ -846,42 +849,45 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 'cSearchFilterQuery': cSearchFilterQuery, 'oSort': oSort,
             };
 
-            const cScript = this.cDirPythonPath + 'ExportListing.py';
-            const oPyArgs = [cScript, JSON.stringify(oParams)]
-            const oCreateFile = spawn(process.env.PYTHON_PATH, oPyArgs);
-            let oResPyProg: any;
-            oCreateFile.stdout.on('data', function (data) {
-                // oResPyProg = JSON.parse(data.toString('utf8'))
-                try {
-                    oResPyProg = JSON.parse(data.toString('utf8'));
-                } catch (error) {
-                    oResPyProg = undefined;
-                }
-            });
-            // oCreateFile.stderr.on('data', (data) => {
-            //     oResPyProg += JSON.stringify(data.toString('utf8'))
-            // });
-            oCreateFile.stderr.on('error', (data) => {
-                oResPyProg = undefined
-            });
-            oCreateFile.stderr.on('data', (data) => {
-                let bufferData = new BufferReader(data)
-                // let __nBytes = bufferData.restAll()
-                let iLength = bufferData.buf.length
-                let arr = [];
-                for (let index = 1; index < iLength; index++) {
-                    try {
-                        arr.push(bufferData.nextString(index))
-                    } catch (error) {
-                        arr.push('')
-                    }
-                }
-                console.log(arr.join(''));
-                this.log(arr.join(''))
-                // oResPyProg += JSON.parse(data.toString('utf8'))
-            });
+            const response = await axios.post('http://localhost:5000/api/exportlisting', oParams);
 
-            await once(oCreateFile, 'close');
+            let oResPyProg = JSON.parse(response.data);
+            // const cScript = this.cDirPythonPath + 'ExportListing.py';
+            // const oPyArgs = [cScript, JSON.stringify(oParams)]
+            // const oCreateFile = spawn(process.env.PYTHON_PATH, oPyArgs);
+            // let oResPyProg: any;
+            // oCreateFile.stdout.on('data', function (data) {
+            //     // oResPyProg = JSON.parse(data.toString('utf8'))
+            //     try {
+            //         oResPyProg = JSON.parse(data.toString('utf8'));
+            //     } catch (error) {
+            //         oResPyProg = undefined;
+            //     }
+            // });
+            // // oCreateFile.stderr.on('data', (data) => {
+            // //     oResPyProg += JSON.stringify(data.toString('utf8'))
+            // // });
+            // oCreateFile.stderr.on('error', (data) => {
+            //     oResPyProg = undefined
+            // });
+            // oCreateFile.stderr.on('data', (data) => {
+            //     let bufferData = new BufferReader(data)
+            //     // let __nBytes = bufferData.restAll()
+            //     let iLength = bufferData.buf.length
+            //     let arr = [];
+            //     for (let index = 1; index < iLength; index++) {
+            //         try {
+            //             arr.push(bufferData.nextString(index))
+            //         } catch (error) {
+            //             arr.push('')
+            //         }
+            //     }
+            //     console.log(arr.join(''));
+            //     this.log(arr.join(''))
+            //     // oResPyProg += JSON.parse(data.toString('utf8'))
+            // });
+
+            // await once(oCreateFile, 'close');
 
             return oResPyProg;
         } catch (oErr) {
@@ -899,7 +905,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
         try {
             const s3ClientClass = new S3ClientClass();
             s3ClientClass.setStreamName(this.currentStreamName)
-            let oDataStream: any = await s3ClientClass.get(cUrl);            
+            let oDataStream: any = await s3ClientClass.get(cUrl);
             if (oDataStream) {
 
                 // const downloadPath = this.cDirTemplateSampleFile + 'SampleFile.xlsx';
@@ -927,7 +933,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
             let memberName = '';
             let memberUploadLogId = '';
 
-            const paths = [
+            const paths: any = [
                 {
                     requiredPath: '/templates/uploadtemplate/member/validate_template_statusfile/',
                     fileNamePrefix: 'VALIDATE_TEMPLATE-STATUSFILE-',
@@ -1180,7 +1186,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      * @param cFilePath string
      * @returns string
      */
-    public async FunDCT_UploadS3File(cFilePath, zipBuffer?:Buffer, type?: string) {
+    public async FunDCT_UploadS3File(cFilePath, zipBuffer?: Buffer, type?: string) {
 
         try {
             const s3ClientClass = new S3ClientClass();
@@ -1206,13 +1212,13 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 else {
                     key = this.cDirTemplateMemberUploadTemplateS3Path;
                 }
-                var zipParams  = {
+                var zipParams = {
                     Bucket: this.cAWSBucket,
                     Key: this.cAWSBucketEnv + '/' + key + '/' + path.basename(cFilePath),
                     Body: zipBuffer,
                     ContentType: oMimeType.lookup(cFilePath)
                 };
-                let cSignedURL = await s3ClientClass.put(zipParams );
+                let cSignedURL = await s3ClientClass.put(zipParams);
                 // const s3Clientdownload = new S3ClientClass();
                 s3ClientClass.setStreamName(this.currentStreamName)
                 // let cUrl = this.cAWSBucketEnv + '/' + key + '/' + path.basename(cFilePath);
@@ -1234,7 +1240,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      */
     public async FunDCT_GetUserNameFromEmail(cEmail: string) {
         try {
-            let oCurrentUserDetails: IUser = await User.findOne({ cEmail: cEmail });
+            let oCurrentUserDetails = await User.findOne({ cEmail: cEmail });
             if (oCurrentUserDetails) {
                 return (oCurrentUserDetails.cUsername);
             } else {

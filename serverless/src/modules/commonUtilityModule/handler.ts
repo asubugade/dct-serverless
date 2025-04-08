@@ -1,8 +1,11 @@
 import { ClsDCT_Common } from "../../commonModule/Class.common";
 import HttpStatusCodes from "http-status-codes";
+import oConnectDB from "../../config/database";
+import { CommonUtilityService } from "./commonUtilityService";
 
 
 const _oCommonCls = new ClsDCT_Common();
+const commonUtilityService = new CommonUtilityService()
 
 const mime = require('mime-types'); // Install with npm install mime-types
 
@@ -11,9 +14,7 @@ module.exports.downloadS3FileHandler = async (event, context, callback) => {
         const { cDownloadPath } = JSON.parse(event.body);
         const fileExtension = cDownloadPath.split('.').pop(); // Extract file extension
         const contentType = mime.lookup(fileExtension) || 'application/octet-stream'; // Get MIME type
-
         const oFileStream = await _oCommonCls.FunDCT_DownloadS3File(cDownloadPath);
-
         if (oFileStream) {
             return {
                 statusCode: 200,
@@ -25,12 +26,29 @@ module.exports.downloadS3FileHandler = async (event, context, callback) => {
                 isBase64Encoded: true,
             };
         }
-
         return {
             statusCode: 404,
             body: JSON.stringify({ message: 'File not found' }),
         };
     } catch (err) {
         await _oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
+    }
+};
+
+module.exports.listExportHandler = async (event, context, callback) => {
+    let response;
+    try {
+        context.callbackWaitsForEmptyEventLoop = false;
+        await oConnectDB();
+        _oCommonCls.FunDCT_ApiRequest(event)
+        response = await commonUtilityService.listExport(event);
+        callback(null, response);
+
+    } catch (error) {
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response);
     }
 };
