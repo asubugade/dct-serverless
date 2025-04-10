@@ -1,9 +1,11 @@
-
+import os
 import json
 import xlsxwriter
 import datetime
-import os
 import re
+import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
 from pyconfig.model_common import model_common_Cls
 from datetime import datetime
 from pyconfig import loadConfig
@@ -38,7 +40,6 @@ def handler(event: dict, context=None):
         data = event if isinstance(event, dict) else json.loads(event)
         exData = json.loads(data['body']) if isinstance(data['body'], str) else data['body']
         cTemplateTypes = exData['cTemplateTypes']
-        print("cTemplateTypes======>" ,cTemplateTypes)
         cUserID = exData['cUserID']
         cType = exData['cType']
         cSearchFilterQuery = exData['cSearchFilterQuery']

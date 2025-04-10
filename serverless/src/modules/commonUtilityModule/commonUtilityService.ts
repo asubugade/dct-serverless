@@ -231,13 +231,17 @@ export class CommonUtilityService {
                 }
             }
             let objRes = await this._oCommonCls.FunDCT_exportDetails(JSON.stringify(cSearchFilterQuery), oSort, event, cTemplateTypes ? cTemplateTypes : []);
-            console.log("objRes================>",objRes);
-            
             if (objRes.cStatus == 'Success') {
                 let oJSONRes = {
                     aModuleDetails: objRes
                 };
-                // return oRes.send(objRes)
+                return {
+                    statusCode: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                      },
+                    body: JSON.stringify(objRes),
+                };
             } else {
                 let oJSONRes = {
                     aModuleDetails: objRes
