@@ -1186,7 +1186,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      * @param cFilePath string
      * @returns string
      */
-    public async FunDCT_UploadS3File(cFilePath, zipBuffer?: Buffer, type?: string) {
+    public async FunDCT_UploadS3File(cFilePath, type?: string , zipBuffer?: Buffer) {
 
         try {
             const s3ClientClass = new S3ClientClass();

@@ -782,10 +782,10 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             let iTemplateID = oPendingUpload.iTemplateID;
             stream = stream + iTemplateID
             this.FunDCT_ApiRequest({ baseUrl: stream })
-            let tCutoffConverted: string;
-            let cTemplateType: string;
+            let tCutoffConverted: any;
+            let cTemplateType: any;
             await this.FunDCT_SetCurrentUserDetailsByID(oPendingUpload.iEnteredby);
-            let oCurrentUserDetails: IUser = await User.findOne({ _id: new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) });
+            let oCurrentUserDetails = await User.findOne({ _id: new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) }).lean() as IUser;
             this.FunDCT_setUserDetails(oCurrentUserDetails);
             if (this._cUploadType == 'DISTRIBUTE') {
                 this.FunDCT_SetCompanyName(this.oCurrentUserDetails.cCompanyname);
@@ -794,18 +794,18 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             }
             this.FunDCT_setTemplateUploadLogID(oPendingUpload._id);
             this.FunDCT_setTemplateUserID(oPendingUpload.iEnteredby);
-            let oTemplate: ITemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(iTemplateID) });
-            let oTemplateMetaData: ITmplMetaData = await TmplMetaData.findOne({ iTemplateID: iTemplateID });
+            let oTemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(iTemplateID) }).lean() as ITemplate;
+            let oTemplateMetaData = await TmplMetaData.findOne({ iTemplateID: iTemplateID }).lean() as ITmplMetaData;
             let cAdditionalFieldValue: string = '-';
             let iAdditionalCnfgID: any;
-            let oAdditionalConfiguration: IAdditionalFields;
+            let oAdditionalConfiguration;
             if (oTemplate && oTemplateMetaData) {
                 tCutoffConverted = oTemplateMetaData.tCuttoffdate;
                 cTemplateType = oTemplate.cTemplateType;
                 if (oTemplateMetaData.aAdditionalConfiguration[0]['cAdditionalFields']) {
                     if (oTemplateMetaData.aAdditionalConfiguration[0]['cAdditionalFields'].length > 0) {
                         iAdditionalCnfgID = oTemplateMetaData.aAdditionalConfiguration[0]['cAdditionalFields'];
-                        oAdditionalConfiguration = await Additionalfields.findOne({ _id: new mongoose.Types.ObjectId(iAdditionalCnfgID) })
+                        oAdditionalConfiguration = await Additionalfields.findOne({ _id: new mongoose.Types.ObjectId(iAdditionalCnfgID) }).lean() as IAdditionalFields;
                         cAdditionalFieldValue = oAdditionalConfiguration.cAdditionalFieldValue;
                     }
                 }
@@ -857,7 +857,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 this.FunDCT_setValidateTemplateResponseFile('VALIDATE_TEMPLATE-RESPONSEFILE-' + iTemplateID + '-' + this._iTemplateUploadLogID + '-' + this._cUserID + '-' + Date.now() + '.json');
                 let userID = this.FunDCT_getUserID()
 
-                let oTemplateType: ITemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType });
+                let oTemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType }).lean() as ITemplateType;
                 const oParams = {
                     'iTemplateID': iTemplateID,
                     'tCuttoffdate': (this._cUploadType == 'DISTRIBUTE') ? this.FunDCT_GetCuttoffdate() : '0000-00-00',//added by stewari
@@ -885,7 +885,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     const cScript = this.cDirPythonPath + 'ValidateTemplate.py';
                     const oPyArgs = [cScript, JSON.stringify(oParams)]
 
-                    const oCreateFile = spawn(process.env.PYTHON_PATH, oPyArgs);
+                    const oCreateFile: any = spawn(process.env.PYTHON_PATH, oPyArgs);
                     // const oCreateFile = spawn('python', oPyArgs);
                     let oResPyProg: any;
                     oCreateFile.stdout.on('data', function (data) {
@@ -903,7 +903,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                         let bufferData = new BufferReader(data)
                         // let __nBytes = bufferData.restAll()
                         let iLength = bufferData.buf.length
-                        let arr = [];
+                        let arr: any = [];
                         for (let index = 1; index < iLength; index++) {
                             try {
                                 arr.push(bufferData.nextString(index))
@@ -963,20 +963,20 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 else {
                     let oResponseParse;
                     let selectedMember;
-                    let selectedMembersDataList = [];
-                    let oMemberEmailAndScac = [];
-                    let cDistributionDetails = {};
+                    let selectedMembersDataList: any = [];
+                    let oMemberEmailAndScac: any = [];
+                    let cDistributionDetails: any = {};
                     // let oResponseRead: any = fs.readFileSync(uploadFilePath); //Read uploaded template file from C:\VAR\TEMP\assets\templates\uploadtemplate\interteam.
                     // let oResponseFile = xlsx.readFile(uploadFilePath);
                     let type = "prefilledno";
                     let uploadFilePath = oParams.cFileDir + oParams.cFileName + oParams.cFileType;
                     let fullUploadPath = await this._oCommonCls.FunDCT_UploadS3File(uploadFilePath, type);//upload & return file path for status file.
 
-                    let oTmplUploadLog: ITmplUploadLog = await TmplUploadLog.findOne({ _id: this._iTemplateUploadLogID, iActiveStatus: 0 });
+                    let oTmplUploadLog = await TmplUploadLog.findOne({ _id: this._iTemplateUploadLogID, iActiveStatus: 0 }).lean() as ITmplUploadLog;
                     if (oTmplUploadLog) {
                         selectedMember = oTmplUploadLog.cSelectedMembers
                         for (let scacCode of selectedMember) {
-                            let oMembersList: IMember = await GenMember.findOne({ cScac: scacCode });
+                            let oMembersList = await GenMember.findOne({ cScac: scacCode }).lean() as IMember;
                             if (oMembersList) {
                                 selectedMembersDataList.push(oMembersList);
                                 let cEmail = oMembersList['_doc'].cEmail;
@@ -987,7 +987,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                                 // let data2 = "aMappedScacColumnsStat." + scacCode;
                                 let data = `aMemberCutoffs.${scacCode}`;
                                 let data2 = `aMappedScacColumnsStat.${scacCode}`;
-                                let oTemplateMetaData: ITmplMetaData = await TmplMetaData.findOne({ iTemplateID: iTemplateID });
+                                let oTemplateMetaData = await TmplMetaData.findOne({ iTemplateID: iTemplateID }).lean() as ITmplMetaData;
                                 const aRequestDetails = {
                                     [data]: [{ tCuttoffdate: oTemplateMetaData.tCuttoffdate }],
                                     aDistributedData: "",
@@ -1186,8 +1186,8 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             //     }
             // } 
             if (this._cUploadType == 'DISTRIBUTE') {
-                let ccEmailArray = []; // cc array
-                let sendToEmailArray = []; // cc array
+                let ccEmailArray: any = []; // cc array
+                let sendToEmailArray: any = []; // cc array
                 ccEmailArray.push(this.cEmail) //current login user's email add in cc array
 
                 let aVariablesVal = {
@@ -1204,7 +1204,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     }
                 }
 
-                let oTmplUploadLog: ITmplUploadLog = await TmplUploadLog.findOne({ _id: this._iTemplateUploadLogID });
+                let oTmplUploadLog = await TmplUploadLog.findOne({ _id: this._iTemplateUploadLogID }).lean() as ITmplUploadLog;
                 if (oTmplUploadLog.iActiveStatus == -1) {
                     await TmplUploadLog.updateOne(
                         { _id: oTmplUploadLog._id },
@@ -1364,7 +1364,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 tUpdated: new Date(),
                 iMaxDepthHeaders: oResponseParse.iMaxDepthHeaders
             };
-            let oTmplUploadLog: ITmplUploadLog = await TmplUploadLog.findOne({ _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 });
+            let oTmplUploadLog = await TmplUploadLog.findOne({ _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 }).lean() as ITmplUploadLog;
             if (oTmplUploadLog) {
                 let iTemplateID = oTmplUploadLog.iTemplateID
 
@@ -1405,7 +1405,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     { _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 },
                     { $set: aTmplUploadLogFields },
                     { new: true }
-                );
+                ).lean() as ITmplUploadLog;
             }
         } catch (oErr) {
             // let oStatus: IStatus = await Status.findOne({ cStatusCode: 'ACTIVE' });
@@ -1451,14 +1451,14 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 tProcessEnd: new Date(),
                 tUpdated: new Date(),
             };
-            let oTmplUploadLog: IMemTmplUploadLog = await MemTmplUploadLog.findOne({ _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 });
+            let oTmplUploadLog = await MemTmplUploadLog.findOne({ _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 }).lean() as IMemTmplUploadLog;
             if (oTmplUploadLog) {
                 this.isRateExtendMode = oTmplUploadLog['_doc']?.isRateExtendMode;
                 oTmplUploadLog = await MemTmplUploadLog.findOneAndUpdate(
                     { _id: new mongoose.Types.ObjectId(this._iTemplateUploadLogID), iActiveStatus: 0 },
                     { $set: aTmplUploadLogFields },
                     { new: true }
-                );
+                ).lean() as IMemTmplUploadLog;
             }
         } catch (oErr) {
             this._oCommonCls.error(oErr.message);
@@ -1582,6 +1582,17 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     iTemplateTypeID: iTemplateTypeID,
                     jDump: oParams
                 })
+
+                // if (oTemplateType.preFillData == 'no' || this._cUploadType == 'DISTRIBUTE') {
+                //     let oResponseParse;
+                //     let selectedMember;
+                //     let selectedMembersDataList = [];
+                //     let oMemberEmailAndScac = [];
+                //     let cDistributionDetails = {};
+                //     let type = "prefilledno";
+                //     let uploadFilePath = oParams.cFileDir + oParams.cFileName + oParams.cFileType;
+                //     let fullUploadPath = await this._oCommonCls.FunDCT_UploadS3File(uploadFilePath, type);//upload & return file path for status file.
+                // }
 
 
             }

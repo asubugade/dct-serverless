@@ -61,7 +61,7 @@ export class UploadTemplateService {
 
                 try {
                     let type = "interteam";
-                    let response = await this._oCommonCls.FunDCT_UploadS3File(zipPath, zipBuffer, type);
+                    let response = await this._oCommonCls.FunDCT_UploadS3File(zipPath,type, zipBuffer);
                     cAddtionalFile = response;
                     this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- cAddtionalFile')
                 } catch (error) {

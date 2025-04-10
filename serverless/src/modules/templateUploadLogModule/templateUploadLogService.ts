@@ -3,6 +3,7 @@ import Template from "../../models/GenTemplate";
 import TemplateType, { ITemplateType } from "../../models/GenTemplateType";
 import User, { IUser } from "../../models/GenUser";
 import TmplMetaData, { ITmplMetaData } from "../../models/Tmplmetadata";
+import TmplUploadLog, { ITmplUploadLog } from "../../models/Tmpluploadlog";
 import { getMemberUploadLog, getTemplateUploadLogCount } from "./templateUploadLogDal";
 import HttpStatusCodes from "http-status-codes";
 
@@ -294,5 +295,27 @@ export class TemplateUploadLogService {
         }
     }
 
+    public templateUploadLogDelete = async (event) => {
+        const oTmplUploadLog = await TmplUploadLog.findOne({ _id: event.pathParameters.id, iActiveStatus: 0 }).lean() as ITmplUploadLog;
 
+        if (oTmplUploadLog) {
+            if (oTmplUploadLog.bProcessed === 'Y') {
+                return await this._oCommonCls.FunDCT_Handleresponse('Error', 'TEMPLATE_UPLOAD_LOG', 'LOG_ALREADY_PROCESSED', HttpStatusCodes.BAD_REQUEST, '');
+            } else {
+                await TmplUploadLog.updateOne(
+                    { _id: event.pathParameters.id },
+                    { $set: { iActiveStatus: -1, bExceptionfound: 'Y', bProcesslock: 'N', bProcessed: 'F' } }
+                );
+
+                await TmplMetaData.updateOne(
+                    { iTemplateID: oTmplUploadLog.iTemplateID },
+                    { $set: { iRedistributedIsUploaded: "1" } }
+                );
+
+                return await this._oCommonCls.FunDCT_Handleresponse('Success', 'TEMPLATE_UPLOAD_LOG', 'TEMPLATE_UPLOAD_LOG_DELETED', 200, event.pathParameters.id);
+            }
+        } else {
+            return await this._oCommonCls.FunDCT_Handleresponse('Error', 'TEMPLATE_UPLOAD_LOG', 'LOG_NOT_FOUND', HttpStatusCodes.BAD_REQUEST, '');
+        }
+    }
 }

@@ -1483,6 +1483,21 @@ functions:
               type: request
 
 
+  deleteTemplateUploadLog:
+      handler: src/modules/templateUploadLogModule/handler.deleteTemplateUploadLogHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/templateuploadlog/{id}
+            method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
 
 
 #Upload Template Module Routes

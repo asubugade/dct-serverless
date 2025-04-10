@@ -50,3 +50,18 @@ module.exports.templateUploadLogListHandler = async (event, context, callback) =
     callback(null, response);
   }
 };
+
+module.exports.deleteTemplateUploadLogHandler = async (event, context, callback) => {
+  let response;
+  try {
+    context.callbackWaitsForEmptyEventLoop = false;
+    await oConnectDB();
+    return await templateUploadLogService.templateUploadLogDelete(event);
+  } catch (error) {
+    response = {
+      statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ error: error.message }),
+    };
+    callback(null, response);
+  }
+};
