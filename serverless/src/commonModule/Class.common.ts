@@ -1186,7 +1186,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      * @param cFilePath string
      * @returns string
      */
-    public async FunDCT_UploadS3File(cFilePath, type?: string , zipBuffer?: Buffer) {
+    public async FunDCT_UploadS3File(cFilePath, type?: string, zipBuffer?: Buffer) {
 
         try {
             const s3ClientClass = new S3ClientClass();
@@ -1195,12 +1195,12 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
 
                 var params = {
                     Bucket: this.cAWSBucket,
-                    Key: this.cAWSBucketEnv + '/' + this.cAWSBucketInstructionFile + '/' + path.basename(cFilePath),
-                    Body: fs.readFileSync(cFilePath),
+                    Key: this.cAWSBucketEnv + '/' + this.cAWSBucketInstructionFile + '/' + cFilePath,
+                    Body: zipBuffer,
                     ContentType: oMimeType.lookup(cFilePath)
                 };
                 let cSignedURL = await s3ClientClass.put(params);
-                return this.cAWSBucketEnv + '/' + this.cAWSBucketInstructionFile + '/' + path.basename(cFilePath);
+                return this.cAWSBucketEnv + '/' + this.cAWSBucketInstructionFile + '/' + cFilePath;
             } else {
                 let key;
                 if (type === "interteam") {

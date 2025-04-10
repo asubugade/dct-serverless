@@ -1,9 +1,13 @@
 import { ClsDCT_Common } from "../../commonModule/Class.common";
+import { ClsDCT_EmailTemplate } from '../../commonModule/Class.emailtemplate';
 import HttpStatusCodes from "http-status-codes";
+import Template, { ITemplate } from "../../models/GenTemplate";
+import { getMember } from "./commonUtilityDal";
 
 
 export class CommonUtilityService {
     private _oCommonCls = new ClsDCT_Common();
+    private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
 
     public listExport = async (event) => {
         try {
@@ -239,7 +243,7 @@ export class CommonUtilityService {
                     statusCode: 200,
                     headers: {
                         'Content-Type': 'application/json',
-                      },
+                    },
                     body: JSON.stringify(objRes),
                 };
             } else {
@@ -249,6 +253,36 @@ export class CommonUtilityService {
                 return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CREATE_TEMPLATE', 'EXCELTOJSON_UNSUCESS', 200, oJSONRes);
             }
         } catch (err) {
+            return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
+        }
+    }
+
+    public sendInstruction = async (formData) => {
+        try {
+            const { iTemplateID, cEmailSubject, cEmailText, cAdditionalEmail } = formData;
+            let cFilePath = formData.files[0].filename;
+            let bufferContent = formData.files[0].content;
+            let oTemplates = await Template.findOne({ _id: iTemplateID }).lean() as ITemplate;
+            let cTemplateName = oTemplates.cTemplateName;
+            let memberlist: any = await getMember(iTemplateID);
+            let aMailTo = memberlist.map(x => x.cEmail);
+            if (cAdditionalEmail && cAdditionalEmail !== '') {
+                aMailTo.push(cAdditionalEmail);
+            }
+            const allEmails = aMailTo.join(',').split(',').join(',');
+            let cSignedURL = await this._oCommonCls.FunDCT_UploadS3File(cFilePath, undefined, bufferContent);
+
+            var aVariablesVal = {
+                // DCTVARIABLE_USERNAME: await this._oCommonCls.FunDCT_GetUserNameFromEmail(aMailTo[cKey]),
+                DCTVARIABLE_TEMPLATENAME: cTemplateName,
+                DCTVARIABLE_INSTRUCTIONFILE: this._oCommonCls.cFrontEndURILocal + "sessions/s3download?downloadpath=" + cSignedURL,
+                DCTVARIABLE_INSTRUCTIONFILE_CONTENT: cEmailText,
+            };
+            this._oEmailTemplateCls.FunDCT_SetSubject(cEmailSubject)
+            await this._oEmailTemplateCls.FunDCT_SendNotification('SEND_INSTRUCTION', 'SEND_INSTRUCTION', aVariablesVal, allEmails)
+            return await this._oCommonCls.FunDCT_Handleresponse('Success', 'SEND_INSTRUCTION', 'SEND_INSTRUCTION_SUCCESS', 200, '');
+        }
+        catch (err) {
             return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
         }
     }

@@ -6,7 +6,7 @@ import { CommonUtilityService } from "./commonUtilityService";
 
 const _oCommonCls = new ClsDCT_Common();
 const commonUtilityService = new CommonUtilityService()
-
+const parser = require('lambda-multipart-parser')
 const mime = require('mime-types'); // Install with npm install mime-types
 
 module.exports.downloadS3FileHandler = async (event, context, callback) => {
@@ -42,6 +42,33 @@ module.exports.listExportHandler = async (event, context, callback) => {
         await oConnectDB();
         _oCommonCls.FunDCT_ApiRequest(event)
         response = await commonUtilityService.listExport(event);
+        callback(null, response);
+
+    } catch (error) {
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response);
+    }
+
+};
+
+module.exports.sendInstructionHandler = async (event, context, callback) => {
+    let response;
+    try {
+        context.callbackWaitsForEmptyEventLoop = false;
+        await oConnectDB();
+        const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
+        // Parse multipart/form-data
+        const parsedData = await parser.parse({
+            headers: event.headers,
+            body: bodyBuffer.toString('binary')
+        });
+
+        // Convert fields to normal object
+        const formData: any = { ...parsedData };
+        response = await commonUtilityService.sendInstruction(formData);
         callback(null, response);
 
     } catch (error) {

@@ -38,7 +38,6 @@ module.exports.excelToJsonHandler = async (event, context, callback) => {
   }
 };
 
-
 module.exports.addTemplateHandler = async (event, context, callback) => {
   let response;
   try {
@@ -62,7 +61,6 @@ module.exports.addTemplateHandler = async (event, context, callback) => {
     callback(null, response);
   }
 };
-
 
 module.exports.deleteTemplateHandler = async (event, context, callback) => {
   let response;

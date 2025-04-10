@@ -1541,6 +1541,16 @@ functions:
             cors: true
 
 
+  sendInstruction:
+      handler: src/modules/commonUtilityModule/handler.sendInstructionHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/sendInstruction
+            method: post
+            cors: true
+
+
 # Member Submission Module Routes
 
   memberSubmissionlist:
