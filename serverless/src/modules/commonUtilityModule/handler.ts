@@ -31,7 +31,7 @@ module.exports.downloadS3FileHandler = async (event, context, callback) => {
             body: JSON.stringify({ message: 'File not found' }),
         };
     } catch (err) {
-        await _oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
+        return await _oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
     }
 };
 

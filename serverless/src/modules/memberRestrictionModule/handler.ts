@@ -50,7 +50,7 @@ module.exports.addMemberRestrictionHandler = async (event, context, callback) =>
                 .json({ errors: errors.array() });
         }
 
-        response =await memberRestrictionService.restrictionAdd(event);
+        response = await memberRestrictionService.restrictionAdd(event);
         callback(null, response);
 
     } catch (error) {
@@ -80,7 +80,7 @@ module.exports.updateMemberRestrictionHandler = async (event, context, callback)
                 .json({ errors: errors.array() });
         }
 
-        response =await memberRestrictionService.restrictionUpdate(event);
+        response = await memberRestrictionService.restrictionUpdate(event);
         callback(null, response);
 
     } catch (error) {
@@ -98,14 +98,14 @@ module.exports.deleteMemberRestrictionHandler = async (event, context, callback)
     try {
         context.callbackWaitsForEmptyEventLoop = false;
         await oConnectDB();
-      const response = await memberRestrictionService.memberRestrictionDelete(event);
-      callback(null, response)
-  
+        const response = await memberRestrictionService.memberRestrictionDelete(event);
+        callback(null, response)
+
     } catch (error) {
-      response = {
-        statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
-        body: JSON.stringify({ error: error.message }),
-      };
-      callback(null, response)
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response)
     }
-  };
+};

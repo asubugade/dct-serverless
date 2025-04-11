@@ -1646,6 +1646,48 @@ functions:
               type: request
 
 
+#Member Upload Module Routes
+
+  memberUploadList:
+      handler: src/modules/memberUploadModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+  downloadTemplate:
+      handler: src/modules/memberUploadModule/handler.downloadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/downloadtemplate
+            method: post
+            cors: true
+
+  
+  deleteMemberUploadLog:
+      handler: src/modules/memberUploadModule/handler.deleteMemberUploadLogHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/{id}
+            method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
 #Python API
 
   validatePython:
