@@ -5,7 +5,7 @@ import Template, { ITemplate } from "../../models/GenTemplate";
 import { getMemberUploadLog, getMemberUploadLogCount, getTemplate, getTemplateCount, getTemplateNoTimer, getTemplateTimer } from "./listTemplateDal";
 import moment from "moment";
 import TmplUploadLog, { ITmplUploadLog } from "../../models/Tmpluploadlog"
-
+import * as XLSX from 'xlsx';
 
 
 
@@ -915,6 +915,54 @@ export class ListTemplateService {
     catch (err) {
       return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'SERVER_ERROR');
     }
+  }
+
+  public checkTemplatePath = async (event) => {
+    const { iTemplateID, cMemberName } = JSON.parse(event.body);
+    const cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN']
+    this._oCommonCls.FunDCT_ApiRequest(event)
+    await this._oCommonCls.FunDCT_SetCurrentUserDetails(cToken);
+    let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
+    let cUserType = oCurrentUserType[0].cAccessCode;
+    let cCompanyname: string;
+    if (cMemberName != undefined) {
+      cCompanyname = cMemberName;
+    }
+    else {
+      cCompanyname = this._oCommonCls.oCurrentUserDetails.cCompanyname;
+    }
+    let downloadPath;
+    const oUploadlogs = await TmplUploadLog.findOne({ iTemplateID: { $in: [new mongoose.Types.ObjectId(iTemplateID)] }, iActiveStatus: 0 }).sort({ _id: -1 })
+    if (oUploadlogs) {
+      for (let obj in oUploadlogs.cDistributionDetails) {
+        if (oUploadlogs.cDistributionDetails[obj].cDistScaccode == cCompanyname) {
+          downloadPath = oUploadlogs.cDistributionDetails[obj].cMemberDistributionFilePath
+          break;
+        }
+      }
+    }
+    let oTemplate = await Template.findOne({ _id: iTemplateID }).lean() as ITemplate;
+    if (downloadPath == undefined) {
+      if (oTemplate) {
+        downloadPath = oTemplate.cTemplateSampleFile
+      }
+    }
+    let oFileStream: any = await this._oCommonCls.FunDCT_DownloadS3File(downloadPath);
+    oFileStream = Buffer.isBuffer(oFileStream)
+      ? oFileStream
+      : Buffer.from(oFileStream);
+
+    const workbook = XLSX.read(oFileStream, { type: 'buffer' });
+
+    const workSheetsFromFile = workbook.SheetNames.map(sheetName => ({
+      name: sheetName,
+      data: XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 })
+    }));
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(workSheetsFromFile),
+    };
   }
 
 }

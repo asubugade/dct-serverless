@@ -61,7 +61,7 @@ export class UploadTemplateService {
 
                 try {
                     let type = "interteam";
-                    let response = await this._oCommonCls.FunDCT_UploadS3File(zipPath,type, zipBuffer);
+                    let response = await this._oCommonCls.FunDCT_UploadS3File(zipPath, type, zipBuffer);
                     cAddtionalFile = response;
                     this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- cAddtionalFile')
                 } catch (error) {
@@ -77,7 +77,7 @@ export class UploadTemplateService {
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplateDetails')
             const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, cTemplateFile: cRenamedFile, iActiveStatus: 0, tCuttoffdate, cSelectedMembers: JSON.parse(cSelectedMembers), cUploadType: 'DISTRIBUTE', bProcesslock: 'N', cEmailSubject, cEmailFrom, cEmailText, cAdditionalEmail, iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalFile: cAddtionalFile, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex };
             let oTemplates = new TmplUploadLog(aRequestDetails);
-            const tmplUploadLogDetail=  await oTemplates.save();            
+            const tmplUploadLogDetail = await oTemplates.save();
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplates.save')
 
             const templateTypeDetails = await TemplateType.find(
@@ -117,7 +117,7 @@ export class UploadTemplateService {
             }
             const options = { upsert: true, new: true };
             await GenLane.findOneAndUpdate(query, update, options);
-            const jDumpDetails = await this.clsDCT_ManageTemplate.getJDumpDetails(templateTypeDetails[0]._id , tmplUploadLogDetail._id)
+            const jDumpDetails = await this.clsDCT_ManageTemplate.getJDumpDetails(templateTypeDetails[0]._id, tmplUploadLogDetail._id)
             await GenLaneSchedule.insertMany(jDumpDetails)
 
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);

@@ -295,6 +295,16 @@ functions:
             type: request
 
 
+  checkTemplatePathHandler:
+    handler: src/modules/listTemplateModule/handler.checkTemplatePathHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/checktemplatepath
+          method: post
+          cors: true
+
+
 #AccessType Module Routes 
 
   accessTypeList:
@@ -1679,6 +1689,21 @@ functions:
         - http:
             path: api/memberuploadtemplate/{id}
             method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  memberUploadTemplate:
+      handler: src/modules/memberUploadModule/handler.memberUploadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/add
+            method: post
             cors: true
             authorizer:
               name: GetValidatePermission

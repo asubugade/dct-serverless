@@ -213,5 +213,25 @@ module.exports.getMemberUploadLogHandler = async (event, context, callback) => {
     }
 };
 
+module.exports.checkTemplatePathHandler = async (event, context, callback) => {
+    let response;
+    try {
+        context.callbackWaitsForEmptyEventLoop = false;
+        await oConnectDB();
+        response = await listTemplateServices.checkTemplatePath(event);
+
+        callback(null, response);
+
+    } catch (error) {
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response);
+    }
+};
+
+
+
 
 
