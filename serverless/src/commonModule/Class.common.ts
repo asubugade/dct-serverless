@@ -15,22 +15,21 @@ import oJwt from "jsonwebtoken";
 import Payload from "../types/Payload";
 import User, { IUser } from "../models/GenUser";
 import GenAccessType, { IAccessType } from "../models/GenAccessType";
-import { spawn } from "child_process";
 import fs, { createWriteStream } from 'fs';
 var mongoose = require('mongoose')
-const { once } = require('events');
 
 import { S3ClientClass } from '../middleware/aws-s3-client';
 import * as path from 'path';
 const oMimeType = require('mime-types');
 import Template, { ITemplate } from "../models/GenTemplate";
 import MemTmplUploadLog, { IMemTmplUploadLog } from "../models/MemTmplUploadLog";
-import TmplMetaData, { ITmplMetaData } from "../models/Tmplmetadata";
 import GenMember, { IMember } from "../models/GenMember";
 import { model } from 'mongoose';
 import { cloudWatchClass } from "../middleware/cloudWatchLogger";
 const BufferReader = require('buffer-reader');
 import axios from 'axios';
+import TmplConsolidationReq from "../models/TmplConsolidationReq"
+import MemberSubmissionDownloadLogSchema from "../models/MemberSubmissionDownloadLog"
 
 export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cRandomUnique: string;//used for general random string
@@ -58,6 +57,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cMemberEmail: string;
     public cCurrentAPIrequest: string
     public currentStreamName: string;
+    // private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
 
     /**
      * Constructor
@@ -650,7 +650,8 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 break;
 
             case "CONSOLIDATE":
-                Schema = Object.keys(model('tmpl_consolidationreqs').schema.paths);
+                // Schema = Object.keys(model('tmpl_consolidationreqs').schema.paths);
+                 Schema = Object.keys(TmplConsolidationReq.schema.paths);
                 aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
                     && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
                     && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));
@@ -659,7 +660,8 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 break;
 
             case "MEMBER_SUBMISSION_TEMPLATE_LOGS":
-                Schema = Object.keys(model('tmpl_membersubmissiondownloadlogs').schema.paths);
+                // Schema = Object.keys(model('tmpl_membersubmissiondownloadlogs').schema.paths);
+                Schema = Object.keys(MemberSubmissionDownloadLogSchema.schema.paths);
                 aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
                     && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
                     && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));

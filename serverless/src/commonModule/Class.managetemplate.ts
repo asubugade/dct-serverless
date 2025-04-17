@@ -38,6 +38,9 @@ const oMimeType = require('mime-types');
 const BufferReader = require('buffer-reader');
 
 import GenEmailtemplates, { IEmailtemplates } from "../models/GenEmailtemplates";
+import TemplateType from "../models/GenTemplateType";
+import GenLane from "../models/GenLane";
+import GenLaneSchedule from "../models/GenLaneSchedule";
 
 export class ClsDCT_ManageTemplate extends ClsDCT_Common {
     public cTemplateName: any;
@@ -712,7 +715,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
         try {
             this.FunDCT_setUserID('0001')
             this.FunDCT_ApiRequest({ baseUrl: '/API/PENDING_TEMPLATE_UPLOAD/' })
-            let oStatus: IStatus = await Status.findOne({ cStatusCode: 'ACTIVE' });
+            let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
             if (!oStatus) {
                 return [];
             }
@@ -720,7 +723,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             let oPendingUpload = await TmplUploadLog.find({ iStatusID: iStatusID, bProcesslock: 'Y', iActiveStatus: 0 }).limit(1);
 
             if (oPendingUpload.length <= 0) {
-                const oPendingUploadLog: ITmplUploadLog = await TmplUploadLog.findOne({ iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 });
+                const oPendingUploadLog = await TmplUploadLog.findOne({ iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 }).lean() as ITmplUploadLog;
                 if (oPendingUploadLog) {
                     this.FunDCT_SetUploadType('DISTRIBUTE');
                     //iUpdatedby: 'Pending Template Cron',
@@ -736,7 +739,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 } else {
                     let oInProgressMemberUpload = await MemTmplUploadLog.find({ iStatusID: iStatusID, bProcesslock: 'Y', iActiveStatus: 0 }).limit(1);
                     if (oInProgressMemberUpload.length <= 0) {
-                        const oPendingMemberUpload: IMemTmplUploadLog = await MemTmplUploadLog.findOne({ iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 });
+                        const oPendingMemberUpload = await MemTmplUploadLog.findOne({ iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N', iActiveStatus: 0 }).lean() as IMemTmplUploadLog;
                         if (oPendingMemberUpload) {
                             this.FunDCT_SetUploadType(oPendingMemberUpload.cUploadType);
                             //iUpdatedby: 'Pending Template Cron',
@@ -1658,6 +1661,52 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             }
         } catch (err) {
             this.error(err.message);
+        }
+    }
+
+    public addUpdateDataIntoGenLaneAndGenLaneSchedule = async (cTemplateType, currentUserId, tmplUploadLogDetail) => {
+        try {
+            const templateTypeDetails = await TemplateType.find(
+                { cTemplateType: cTemplateType }
+            ).select('_id').lean();
+
+            const query = {
+                iTemplateTypeID: templateTypeDetails[0]._id,
+                cProcessingType: "TemplateUpload",
+            };
+
+            // Check if document exists
+            const existingDoc = await GenLane.findOne(query);
+
+            let update;
+
+            if (existingDoc) {
+                // If document exists, increment iToDo
+                update = {
+                    $inc: { iToDo: 1 },
+                    $set: {
+                        iUpdatedby: currentUserId, // Update on modify
+                        tUpdated: new Date()
+                    }
+                };
+            } else {
+                // If inserting new, set iToDo = 1
+                update = {
+                    $set: {
+                        iTemplateTypeID: templateTypeDetails[0]._id,
+                        cProcessingType: "TemplateUpload",
+                        iToDo: 1,
+                        iEnteredby: currentUserId,
+                        tEntered: new Date()
+                    }
+                };
+            }
+            const options = { upsert: true, new: true };
+            await GenLane.findOneAndUpdate(query, update, options);
+            const jDumpDetails = await this.getJDumpDetails(templateTypeDetails[0]._id, tmplUploadLogDetail._id)
+            await GenLaneSchedule.insertMany(jDumpDetails)
+        } catch (error) {
+            return error;
         }
     }
 

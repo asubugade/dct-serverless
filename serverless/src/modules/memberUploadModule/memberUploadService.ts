@@ -11,16 +11,18 @@ import HttpStatusCodes from "http-status-codes";
 import mime from 'mime-types';
 import TmplUploadLog, { ITmplUploadLog } from "../../models/Tmpluploadlog";
 import path from 'path';
-import AdmZip from 'adm-zip'
 import GenEmailtemplates, { IEmailtemplates } from "../../models/GenEmailtemplates";
 import { ClsDCT_EmailTemplate } from "../../commonModule/Class.emailtemplate";
+import { ClsDCT_ManageTemplate } from "../../commonModule/Class.managetemplate";
 
 
 var mongoose = require('mongoose')
-
+const AdmZip = require('adm-zip');
 export class MemberUploadService {
     private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
     private _oCommonCls = new ClsDCT_Common();
+    private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
+
     public memberUploadLogListing = async (event) => {
         try {
             const { iOffset, iLimit, iOffsetLimit, cSearchFilter, cSort, cSortOrder, cTemplateTypes, cTemplateName } = JSON.parse(event.body);
@@ -180,6 +182,7 @@ export class MemberUploadService {
     public memberUploadTemplate = async (formData, event) => {
         try {
             let _cFileTypeUploadTemplate: any;
+            let oFileStream;
             let cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN'];
 
             if (cToken) {
@@ -221,7 +224,7 @@ export class MemberUploadService {
                 }
                 const oTemplateDetails = await this._oCommonCls.FunDCT_GetTemplateDetails(iTemplateID);
                 if (true) {
-                    if (isRateExtendMode !== 'true') {
+                    if (isRateExtendMode == 'true') {
                         const oUploadlogs = await TmplUploadLog.findOne({ iTemplateID: { $in: [new mongoose.Types.ObjectId(iTemplateID)] }, iActiveStatus: 0 }).sort({ _id: -1 })
                         if (oUploadlogs) {
                             for (let obj in oUploadlogs.cDistributionDetails) {
@@ -231,7 +234,7 @@ export class MemberUploadService {
                                 }
                             }
                         }
-                        const oFileStream: any = await this._oCommonCls.FunDCT_DownloadS3File(memberFilePath);
+                        oFileStream = await this._oCommonCls.FunDCT_DownloadS3File(memberFilePath);
                         if (oFileStream) {
 
                             // const destinationDir = process.env.HOME_DIR + 'assets/templates/uploadtemplate/member/';
@@ -260,7 +263,7 @@ export class MemberUploadService {
 
                         }
                     }
-                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(formData.aTemplateFileInfo.content, this._oCommonCls.cAWSBucket + '/templates/uploadtemplate/interteam/' + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
+                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(isRateExtendMode == 'true' ? oFileStream : formData.aTemplateFileInfo.content, this._oCommonCls.cAWSBucket + '/templates/uploadtemplate/interteam/' + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
                     let cAddtionalFile;
                     if (formData?.cAdditionalFiles?.length > 0) {
                         this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- filePathArray')
@@ -286,7 +289,7 @@ export class MemberUploadService {
                     let iMemberID = this._oCommonCls.FunDCT_GetMemberID();
                     const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, iMemberID: iMemberID, cScacCode: this._oCommonCls.oCurrentUserDetails.cCompanyname, cTemplateFile: cRenamedFile, iActiveStatus: 0, cUploadType: 'MEMBER_UPLOAD', iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalFile: cAddtionalFile, cAddtionalComment: cEmailText, aTemplateFileName, aTemplateFileSize, isRateExtendMode };//cAddtionalFile added by spirgonde for additional file upload task
                     let oTemplates = new MemTmplUploadLog(aRequestDetails);
-                    await oTemplates.save({ validateBeforeSave: false });
+                    let memTmplUploadLogDetail = await oTemplates.save({ validateBeforeSave: false });
                     if (isRateExtendMode == 'true') {
                         const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, iMemberID: iMemberID, cScacCode: cSelectedMemebersModel, cUploadType: 'MEMBER_ADMIN_UPLOAD', iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalComment: cEmailText, isRateExtendMode, memberFilePath };
                         let cEmail = this._oCommonCls.FunDCT_getEmail();
@@ -307,8 +310,9 @@ export class MemberUploadService {
                         this._oEmailTemplateCls.FunDCT_SetSubject(aVariablesVal.DCTVARIABLE_TEMPLATENAME + ' (' + iDefaultSubject + ')') //oEmailTemplateDetails[0].cSubject
                         await this._oEmailTemplateCls.FunDCT_SendNotification('MEMBER_ADMIN_UPLOAD', 'RATE_EXTENDED', aVariablesVal, cEmailList);
                     }
-                    return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);
+                    await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, memTmplUploadLogDetail)
 
+                    return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);
                 }
             }
         } catch (err) {

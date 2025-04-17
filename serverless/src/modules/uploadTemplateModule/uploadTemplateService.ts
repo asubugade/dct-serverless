@@ -79,47 +79,7 @@ export class UploadTemplateService {
             let oTemplates = new TmplUploadLog(aRequestDetails);
             const tmplUploadLogDetail = await oTemplates.save();
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplates.save')
-
-            const templateTypeDetails = await TemplateType.find(
-                { cTemplateType: cTemplateType }
-            ).select('_id').lean();
-
-            const query = {
-                iTemplateTypeID: templateTypeDetails[0]._id,
-                cProcessingType: "TemplateUpload",
-            };
-
-            // Check if document exists
-            const existingDoc = await GenLane.findOne(query);
-
-            let update;
-
-            if (existingDoc) {
-                // If document exists, increment iToDo
-                update = {
-                    $inc: { iToDo: 1 },
-                    $set: {
-                        iUpdatedby: event.requestContext.authorizer._id, // Update on modify
-                        tUpdated: new Date()
-                    }
-                };
-            } else {
-                // If inserting new, set iToDo = 1
-                update = {
-                    $set: {
-                        iTemplateTypeID: templateTypeDetails[0]._id,
-                        cProcessingType: "TemplateUpload",
-                        iToDo: 1,
-                        iEnteredby: event.requestContext.authorizer._id,
-                        tEntered: new Date()
-                    }
-                };
-            }
-            const options = { upsert: true, new: true };
-            await GenLane.findOneAndUpdate(query, update, options);
-            const jDumpDetails = await this.clsDCT_ManageTemplate.getJDumpDetails(templateTypeDetails[0]._id, tmplUploadLogDetail._id)
-            await GenLaneSchedule.insertMany(jDumpDetails)
-
+            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, tmplUploadLogDetail)
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);
         } catch (err) {
             this._oCommonCls.log(err)

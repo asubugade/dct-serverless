@@ -1712,6 +1712,36 @@ functions:
               type: request
 
 
+#Member Admin Upload Module Routes
+
+  memberAdminUploadTemplate:
+      handler: src/modules/memberAdminUploadModule/handler.memberUploadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberadminuploadtemplate/add
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+#Send Email Reminder Module Routes
+
+
+  sendEmailReminder:
+      handler: src/modules/sendEmailReminderModule/handler.sendEmailReminderHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/sendemailreminder/send
+            method: post
+            cors: true
+
 
 #Python API
 
