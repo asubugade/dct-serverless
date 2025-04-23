@@ -22,7 +22,7 @@ export class ClsDCT_ConfigIntigrations {
     
     public cJwtSecret:string;
     public cPort:string;
-    public cJwtExpiration:string;
+    public cJwtExpiration:string |any;
     public cCryptoKey:string;
 
     public cAWSBucket:string;

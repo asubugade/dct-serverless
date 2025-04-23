@@ -7,6 +7,8 @@ import oJwt from "jsonwebtoken";
 import Payload from "../../types/Payload";
 import Request from "../../types/Request";
 import User, { IUser } from "../../models/GenUser";
+import { ClsDCT_EmailTemplate } from '../../commonModule/Class.emailtemplate';
+
 // import { ClsDCT_Common } from "../../commonModule/Class.common";
 // import { ClsDCT_User } from "../../../module/Class.user";
 // import Status, { IStatus } from "../../../models/GenStatus";
@@ -15,11 +17,10 @@ import User, { IUser } from "../../models/GenUser";
 import { isNumber } from "util";
 import { TypeOfExpression } from "typescript";
 import { Schema } from "mongoose";
-import { count } from "console";
+import { count, error } from "console";
 // import { FunDCT_ValidatePermission, FunDCT_GetUserPermissions } from "../../../middleware/auth";
 // // import multer from 'multer';
 
-// import { ClsDCT_EmailTemplate } from '../../../module/Class.emailtemplate';
 // import { ClsDCT_Process } from '../../../module/Class.process';
 // import { cloudWatchClass } from '../../../middleware/cloudWatchLogger';
 import rateLimit from 'express-rate-limit';
@@ -48,13 +49,14 @@ export class GenUserService {
   private _oCommonCls = new ClsDCT_Common();
   private _oManageTemplateCls = new ClsDCT_User();
 
+
   public _oStorage: any;
   public upload: any;
   public _oFileUpload: any;
   public _cFileTypeProfileImage: any;
   public _cTempProfileImg: any;
 
-  // private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
+  private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
   // private _oProcessCls = new ClsDCT_Process();
 
 
@@ -180,21 +182,21 @@ export class GenUserService {
           oReq
         );
       }
-      
+
       let resUser = oReq.requestContext?.authorizer?.grantList
       if (body.profileImgUrl === true) {
-      if (!this.bPurl || user.cAvatar !== this.cUploadKey) {
-        if (user.cAvatar === this.cNoPIMsg) {
-          this.cPresignedUrl = null;
-        } else {
-          this.cPresignedUrl = await this._oCommonCls.FunDCT_getPresignedUrl(
-            user.cAvatar
-          );
+        if (!this.bPurl || user.cAvatar !== this.cUploadKey) {
+          if (user.cAvatar === this.cNoPIMsg) {
+            this.cPresignedUrl = null;
+          } else {
+            this.cPresignedUrl = await this._oCommonCls.FunDCT_getPresignedUrl(
+              user.cAvatar
+            );
+          }
+          this.cUploadKey = user.cAvatar;
+          this.bPurl = true;
         }
-        this.cUploadKey = user.cAvatar;
-        this.bPurl = true;
       }
-    }
       resUser = body.profileImgUrl == true ? {
         oGrantlist: resUser ? JSON.parse(resUser) : resUser,
         ...user,
@@ -203,14 +205,14 @@ export class GenUserService {
         isMemberUser: oReq.requestContext?.authorizer?.isMemberUser === "true",
         cAvatar: user.cAvatar,
         cProfileImgUrl: this.cPresignedUrl,
-      }:
-      {
-        oGrantlist: resUser ? JSON.parse(resUser) : resUser,
-        ...user,
-        isAdmin: oReq.requestContext?.authorizer?.isAdmin === "true",  // Convert string "true"/"false" to boolean
-        isDCTUser: oReq.requestContext?.authorizer?.isDCTUser === "true",
-        isMemberUser: oReq.requestContext?.authorizer?.isMemberUser === "true"
-      };
+      } :
+        {
+          oGrantlist: resUser ? JSON.parse(resUser) : resUser,
+          ...user,
+          isAdmin: oReq.requestContext?.authorizer?.isAdmin === "true",  // Convert string "true"/"false" to boolean
+          isDCTUser: oReq.requestContext?.authorizer?.isDCTUser === "true",
+          isMemberUser: oReq.requestContext?.authorizer?.isMemberUser === "true"
+        };
 
       return this.FunDCT_Handleresponse(
         "Success",
@@ -329,8 +331,6 @@ export class GenUserService {
     }
   }
 
-
-
   public userUpdate = async (event, formData) => {
     try {
 
@@ -438,14 +438,189 @@ export class GenUserService {
   }
 
 
+  public generateOTP = async (event) => {
+    const { cUsername } = JSON.parse(event.body);
+    try {
+      this._oCommonCls.FunDCT_ApiRequest(event)
+      let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
+      if (!oStatus) {
+        throw new error
+      }
+      let iStatusID = oStatus._id;
+      let oUser = await User.findOne({ cUsername: cUsername }).lean() as IUser;
+      if (oUser) {
+        this._oCommonCls.FunDCT_SetRandomStr(6, 'iNumber');
+        let iOTP = this._oCommonCls.FunDCT_GetRandomStr();
+        const aUserFields = {
+          cPwdToken: iOTP
+        };
+
+        oUser = await User.findOneAndUpdate(
+          { cUsername: cUsername },
+          { $set: aUserFields },
+          { new: true }
+        ).lean() as IUser;
+
+        //Send Email Notification using Email Template
+        var aVariablesVal = {
+          DCTVARIABLE_USERNAME: cUsername,
+          DCTVARIABLE_OTP: iOTP
+        };
+
+        // Below line of code commented by spirgonde. 
+        // await this._oEmailTemplateCls.FunDCT_SendNotification('USER', 'Retrieve Password OTP', aVariablesVal, this._oCommonCls.cEmail)
+        await this._oEmailTemplateCls.FunDCT_SendNotification('USER', 'Retrieve Password OTP', aVariablesVal, oUser.cEmail)
+
+        return {
+          statusCode: HttpStatusCodes.OK,
+          body: JSON.stringify({ msg: "OTP Generate Successfully. Please check email." }),
+        }
+      } else {
+        return {
+          statusCode: HttpStatusCodes.OK,
+          body: JSON.stringify({ msg: "User does not exists" }),
+        }
+      }
+
+      this._oCommonCls.log('FunDCT_GenerateOTP ApiRequest: ' + event)
+
+    } catch (err) {
+      return {
+        statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+        body: JSON.stringify({ error: err.message }),
+      }
+    }
+  }
 
 
+  public verifyOTP = async (event) => {
+    try {
+      const { cUsername, cPwdToken } = JSON.parse(event.body);
+
+      const oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean();
+      if (!oStatus) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Status is not ACTIVE' }),
+        };
+      }
+
+      const user = await User.findOne({ cUsername, cPwdToken }).lean() as IUser;
+
+      if (!user) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({ error: 'Invalid OTP' }),
+        };
+      }
+
+      const payload: Payload = {
+        userId: user.id,
+        _id: user._id,
+        iAccessTypeID: user.iAccessTypeID,
+        cEmail: user.cEmail,
+        cAvatar: user.cAvatar,
+        cName: user.cName,
+        cUsername: user.cUsername,
+        cCompanyname: user.cCompanyname,
+        cAddress: user.cAddress,
+        cCity: user.cCity,
+        cPostalcode: user.cPostalcode,
+        cState: user.cState,
+        cPhone: user.cPhone,
+        cFax: user.cFax,
+      };
+
+      const token = oJwt.sign(payload, this._oCommonCls.cJwtSecret, {
+        expiresIn: this._oCommonCls.cJwtExpiration,
+      });
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ user, token }),
+      };
+
+    } catch (err) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server Error', message: err.message }),
+      };
+    }
+  }
+
+  public forgotPass = async (event) => {
+    try {
+      const { cUsername, cPassword, newPassword } = JSON.parse(event.body);
+
+      if (!cUsername || !cPassword || !newPassword) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Missing required fields' }),
+        };
+      }
 
 
+      let user = await User.findOne({ cUsername }) as IUser;
+      if (!user) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'User not found' }),
+        };
+      }
 
 
+      if (!Array.isArray(user.passwordHistory)) {
+        user.passwordHistory = [];
+      }
 
 
+      const passwordMatchInHistory = await Promise.all(
+        user.passwordHistory
+          .filter(p => typeof p === 'string' && p) // keep only valid non-empty strings
+          .slice(0, 3)
+          .map(async (oldPassword) => {
+            console.log("newPassword==>", newPassword);
+            console.log("oldPassword==>", oldPassword);
+            return await oBcrypt.compare(newPassword, oldPassword);
+          })
+      );
+
+      console.log("passwordMatchInHistory===>",passwordMatchInHistory);
+      
+
+      if (passwordMatchInHistory.some(isMatch => isMatch)) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'New password must not match any of the last 3 passwords' }),
+        };
+      }
+
+      // Hash the new password
+      const salt = await oBcrypt.genSalt(10);
+      const hashedNewPassword = await oBcrypt.hash(newPassword, salt);
+
+      user.cPassword = hashedNewPassword;
+
+      if (user.passwordHistory.length >= 3) {
+        user.passwordHistory.pop();
+      }
+      user.passwordHistory.unshift(hashedNewPassword);
+
+      await user.save();
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ msg: 'Password updated successfully', cUsername: user.cUsername }),
+      };
+
+    } catch (err) {
+      console.error('Error updating password:', err);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ err: 'Server error' }),
+      };
+    }
+  }
 
 
 

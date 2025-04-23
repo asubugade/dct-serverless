@@ -119,6 +119,35 @@ functions:
             type: request                               
 
 
+  generateOTP:
+    handler: src/modules/userModule/handler.generateOTPHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/generateOTP
+          method: post
+          cors: true
+
+
+  verifyOTP:
+    handler: src/modules/userModule/handler.verifyOTPHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/verifyOTP
+          method: post
+          cors: true
+
+
+  forgotPass:
+    handler: src/modules/userModule/handler.forgotPassHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/forgotPass
+          method: post
+          cors: true
+
 #Template Type Module Routes
 
   templateList:

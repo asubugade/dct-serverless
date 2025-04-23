@@ -6,8 +6,8 @@
 
 type payload = { 
     userId: string,
-    _id: string,
-    iAccessTypeID: string,
+    _id: string | any,
+    iAccessTypeID: string | any,
     cEmail: string,
     cAvatar: string,
     cName: string,

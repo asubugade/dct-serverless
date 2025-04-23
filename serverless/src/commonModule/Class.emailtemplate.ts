@@ -1,9 +1,7 @@
-import { ClsDCT_ConfigIntigrations } from '../../config/config';
 import { ClsDCT_Process } from '../commonModule/Class.process';
-
 import GenEmailtemplates, { IEmailtemplates } from "../models/GenEmailtemplates";
 import nodemailer from 'nodemailer';
-import Mail = require('nodemailer/lib/mailer');
+import Mail from 'nodemailer/lib/mailer';
 import handlebars, { logger } from 'handlebars';
 import { ClsDCT_Common } from './Class.common';
 import { isValidObjectId } from 'mongoose';
@@ -21,17 +19,17 @@ export class ClsDCT_EmailTemplate {
     public cTo: any;
     public cBcc: string;
     public cCc: string;
-    public cNotificationEmail ;
-    public cNotificationEmailpPwd ;
+    public cNotificationEmail;
+    public cNotificationEmailpPwd;
     public cEmailService;
     public cEmailHost;
     public iEmailPort;
 
     private _oProcessCls = new ClsDCT_Process();
-    
+
     /**code added by spirgonde for  'Concurrent connections limit exceeded' issue start... */
     private _oCommonCls = new ClsDCT_Common();
-    public oTransporter; 
+    public oTransporter;
     cProcessCode: string;
     public objEmailTemplateID;
     /**code added by spirgonde for  'Concurrent connections limit exceeded' issue end. */
@@ -43,41 +41,41 @@ export class ClsDCT_EmailTemplate {
         this.FunDCT_localConfig();
         this.FunDCT_secretConfig();
     }
-    
-  private async FunDCT_localConfig(){
-    if (this._oCommonCls.cNodeEnv == "Local") {
-        this.cNotificationEmail =""+this._oCommonCls.cNotificationEmail;
-        this.cNotificationEmailpPwd =""+this._oCommonCls.cNotificationEmailPwd;
-        this.cEmailService = ""+this._oCommonCls.cEmailService;
-        this.cEmailHost = ""+this._oCommonCls.cEmailHost;
-        this.iEmailPort = Number(""+this._oCommonCls.cEmailPort);
-        this._oCommonCls.FunDCT_setUserID('0001')
-        this._oCommonCls.FunDCT_ApiRequest({baseUrl:'/API/EMAILTEMPLATE/'})
-        this.FunDCT_CreateTransporter();
-    }
-  }
 
-  private async FunDCT_secretConfig(){
-    if (process.env.NODE_ENV == "Server") {
-      const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
-      const response = await client.send(
-        new GetSecretValueCommand({
-        SecretId: process.env.SECRET_NAME,
-        }),
-      );
-      if (response) {
-        const dataString = JSON.parse(response.SecretString);
-        this.cNotificationEmail =""+dataString.NOTIFICATION_EMAIL;
-        this.cNotificationEmailpPwd =""+dataString.NOTIFICATION_EMAIL_PWD;
-        this.cEmailService = ""+dataString.NOTIFICATION_EMAIL_SERVICE;
-        this.cEmailHost = ""+dataString.NOTIFICATION_EMAIL_HOST;
-        this.iEmailPort = Number(""+dataString.NOTIFICATION_EMAIL_PORT);
-        this._oCommonCls.FunDCT_setUserID('0001')
-        this._oCommonCls.FunDCT_ApiRequest({baseUrl:'/API/EMAILTEMPLATE/'})
-        this.FunDCT_CreateTransporter();
-      }
+    private async FunDCT_localConfig() {
+        if (this._oCommonCls.cNodeEnv == "Local") {
+            this.cNotificationEmail = "" + this._oCommonCls.cNotificationEmail;
+            this.cNotificationEmailpPwd = "" + this._oCommonCls.cNotificationEmailPwd;
+            this.cEmailService = "" + this._oCommonCls.cEmailService;
+            this.cEmailHost = "" + this._oCommonCls.cEmailHost;
+            this.iEmailPort = Number("" + this._oCommonCls.cEmailPort);
+            this._oCommonCls.FunDCT_setUserID('0001')
+            this._oCommonCls.FunDCT_ApiRequest({ baseUrl: '/API/EMAILTEMPLATE/' })
+            this.FunDCT_CreateTransporter();
+        }
     }
-  }
+
+    private async FunDCT_secretConfig() {
+        if (process.env.NODE_ENV == "Server") {
+            const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
+            const response: any = await client.send(
+                new GetSecretValueCommand({
+                    SecretId: process.env.SECRET_NAME,
+                }),
+            );
+            if (response) {
+                const dataString = JSON.parse(response.SecretString);
+                this.cNotificationEmail = "" + dataString.NOTIFICATION_EMAIL;
+                this.cNotificationEmailpPwd = "" + dataString.NOTIFICATION_EMAIL_PWD;
+                this.cEmailService = "" + dataString.NOTIFICATION_EMAIL_SERVICE;
+                this.cEmailHost = "" + dataString.NOTIFICATION_EMAIL_HOST;
+                this.iEmailPort = Number("" + dataString.NOTIFICATION_EMAIL_PORT);
+                this._oCommonCls.FunDCT_setUserID('0001')
+                this._oCommonCls.FunDCT_ApiRequest({ baseUrl: '/API/EMAILTEMPLATE/' })
+                this.FunDCT_CreateTransporter();
+            }
+        }
+    }
 
     /**
      * To get iProcessID
@@ -241,13 +239,13 @@ export class ClsDCT_EmailTemplate {
             var cQueryUsing: any = {};
             cQueryUsing["iProcessID"] = this.iProcessID;
             cQueryUsing["cEmailType"] = this.cEmailType;
-            let oEmailTemplateDetails ; 
-            if(this.objEmailTemplateID){
-                oEmailTemplateDetails = await GenEmailtemplates.find({_id : new mongoose.Types.ObjectId(this.objEmailTemplateID)})
-                }else{
-                    oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
-                }
-            if (oEmailTemplateDetails && oEmailTemplateDetails.length>0) {
+            let oEmailTemplateDetails;
+            if (this.objEmailTemplateID) {
+                oEmailTemplateDetails = await GenEmailtemplates.find({ _id: new mongoose.Types.ObjectId(this.objEmailTemplateID) })
+            } else {
+                oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
+            }
+            if (oEmailTemplateDetails && oEmailTemplateDetails.length > 0) {
                 if (this.cSubject == '' || !this.cSubject) {
                     this.FunDCT_SetSubject(oEmailTemplateDetails[0].cSubject);
                 }
@@ -255,8 +253,8 @@ export class ClsDCT_EmailTemplate {
                 if (this.cFrom == '') {
                     this.FunDCT_SetFrom(oEmailTemplateDetails[0].cFrom);
                 }
-                let ccArray = [];
-                if (this.cCc){
+                let ccArray: any = [];
+                if (this.cCc) {
                     if (!ccArray.includes(this.cCc)) {
                         ccArray.push(this.cCc);
                     }
@@ -287,7 +285,7 @@ export class ClsDCT_EmailTemplate {
      * @param ID
      */
     public FunDCT_SetEmailTemplateID(ID) {
-        if(ID || ID==''){
+        if (ID || ID == '') {
             this.objEmailTemplateID = ID;
             return this.objEmailTemplateID;
         }
@@ -320,15 +318,15 @@ export class ClsDCT_EmailTemplate {
         try {
             let oEmailTemplateDetails = await this.FunDCT_SetConfigurationDetails(cProcessCode, cEmailType, cTo);
             if (oEmailTemplateDetails) {
-                
+
                 let template = handlebars.compile(this.cEmailBody);
                 if (aVariablesVal.DCTVARIABLE_ADDITIONALEMAILBODY || aVariablesVal.DCTVARIABLE_ADDITIONALEMAILBODY == '') {
-                    handlebars.registerHelper("DCTVARIABLE_ADDITIONALEMAILBODY", function(options) {
+                    handlebars.registerHelper("DCTVARIABLE_ADDITIONALEMAILBODY", function (options) {
                         return new handlebars.SafeString(aVariablesVal.DCTVARIABLE_ADDITIONALEMAILBODY);
                     });
                 }
                 if (aVariablesVal.DCTVARIABLE_INSTRUCTIONFILE_CONTENT || aVariablesVal.DCTVARIABLE_INSTRUCTIONFILE_CONTENT == '') {
-                    handlebars.registerHelper("DCTVARIABLE_INSTRUCTIONFILE_CONTENT", function(options) {
+                    handlebars.registerHelper("DCTVARIABLE_INSTRUCTIONFILE_CONTENT", function (options) {
                         return new handlebars.SafeString(aVariablesVal.DCTVARIABLE_INSTRUCTIONFILE_CONTENT);
                     });
                 }
@@ -354,7 +352,7 @@ export class ClsDCT_EmailTemplate {
 
             }
         } catch (err) {
-            this._oCommonCls.log('email error :'+ err);
+            this._oCommonCls.log('email error :' + err);
             return err;
         }
     }
@@ -371,7 +369,7 @@ export class ClsDCT_EmailTemplate {
             maxMessages: 1,
             rateDelta: 3000,
             rateLimit: 1,
-            service:this.cEmailService,  // check this parameter for staging
+            service: this.cEmailService,  // check this parameter for staging
             host: this.cEmailHost,
             requireTLS: false,
             port: this.iEmailPort,
@@ -392,11 +390,11 @@ export class ClsDCT_EmailTemplate {
      * @param mailOptions Mail.Options
      * @returns 
      */
-    async sendMail(mailOptions: Mail.Options): Promise<nodemailer> {
+    async sendMail(mailOptions: Mail.Options): Promise<any> {
         const transporter = this.oTransporter;
         await transporter.sendMail(mailOptions, function (err, responseStatus) {
             if (err) {
-                this._oCommonCls.log('err:'+ err);
+                this._oCommonCls.log('err:' + err);
             }
             else {
             }

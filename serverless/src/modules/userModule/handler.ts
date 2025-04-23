@@ -195,6 +195,59 @@ module.exports.updateUserHandler = async (req, context, callback) => {
 };
 
 
+module.exports.generateOTPHandler = async (event, context, callback) => {
+  let response;
+  try {
+    context.callbackWaitsForEmptyEventLoop = false;
+    await oConnectDB();
+    let response = await genUserService.generateOTP(event);
+    return response;
+
+  } catch (error) {
+    response = {
+      statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ error: error.message }),
+    };
+    callback(null, response)
+  }
+};
+
+module.exports.verifyOTPHandler = async (event, context, callback) => {
+  let response;
+  try {
+    context.callbackWaitsForEmptyEventLoop = false;
+    await oConnectDB();
+    let response = await genUserService.verifyOTP(event);
+    return response;
+
+  } catch (error) {
+    response = {
+      statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ error: error.message }),
+    };
+    callback(null, response)
+  }
+};
+
+
+module.exports.forgotPassHandler = async (event, context, callback) => {
+  let response;
+  try {
+    context.callbackWaitsForEmptyEventLoop = false;
+    await oConnectDB();
+    let response = await genUserService.forgotPass(event);
+    return response;
+
+  } catch (error) {
+    response = {
+      statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ error: error.message }),
+    };
+    callback(null, response)
+  }
+};
+
+
 
 
 
