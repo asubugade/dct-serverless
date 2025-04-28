@@ -5,16 +5,17 @@ import { check, validationResult } from "express-validator";
 import { checkUserEmail, checkUserEmailUpdate, checkUserName, checkUserNameUpdate } from "./usersDal";
 
 
-
+const dbPromise = oConnectDB();
 const parser = require('lambda-multipart-parser');
 const genUserService = new GenUserService();
 
 
 module.exports.listHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     check("iOffset", "Offset is required").not().isEmpty();
     check("iLimit", "Offset is required").not().isEmpty();
     const errors = validationResult(event);
@@ -38,10 +39,11 @@ module.exports.listHandler = async (event, context, callback) => {
 
 
 module.exports.profileHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     const userProfile = await genUserService.profile(event);
     callback(null, userProfile)
 
@@ -56,10 +58,11 @@ module.exports.profileHandler = async (event, context, callback) => {
 
 
 module.exports.deleteProfileHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     const response = await genUserService.userDelete(event);
     callback(null, response)
 
@@ -74,10 +77,11 @@ module.exports.deleteProfileHandler = async (event, context, callback) => {
 
 
 module.exports.addUserHandler = async (req, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-      context.callbackWaitsForEmptyEventLoop = false;
-      await oConnectDB();
+
+     await dbPromise;
       // Decode base64 body if needed
       const bodyBuffer = Buffer.from(req.body, req.isBase64Encoded ? 'base64' : 'utf8');
       
@@ -135,10 +139,11 @@ module.exports.addUserHandler = async (req, context, callback) => {
 
 
 module.exports.updateUserHandler = async (req, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-      context.callbackWaitsForEmptyEventLoop = false;
-      await oConnectDB();
+
+     await dbPromise;
       // Decode base64 body if needed
       const bodyBuffer = Buffer.from(req.body, req.isBase64Encoded ? 'base64' : 'utf8');
       
@@ -196,10 +201,11 @@ module.exports.updateUserHandler = async (req, context, callback) => {
 
 
 module.exports.generateOTPHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     let response = await genUserService.generateOTP(event);
     return response;
 
@@ -213,10 +219,11 @@ module.exports.generateOTPHandler = async (event, context, callback) => {
 };
 
 module.exports.verifyOTPHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     let response = await genUserService.verifyOTP(event);
     return response;
 
@@ -231,10 +238,11 @@ module.exports.verifyOTPHandler = async (event, context, callback) => {
 
 
 module.exports.forgotPassHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     let response = await genUserService.forgotPass(event);
     return response;
 
@@ -269,7 +277,7 @@ module.exports.forgotPassHandler = async (event, context, callback) => {
 //   let response;
 // 
 
-// await oConnectDB();  try {
+//await dbPromise;  try {
 
 //     console.log("event===============================> " , req);
     

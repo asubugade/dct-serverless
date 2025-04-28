@@ -3,14 +3,14 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { TemplateTypeService } from "./templateTypeService";
-
+const dbPromise = oConnectDB();
 const templateTypeServices = new TemplateTypeService();
 
 module.exports.templateListHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     check("iOffset", "Offset is required").not().isEmpty();
     check("iLimit", "Offset is required").not().isEmpty();
     const errors = validationResult(event);
@@ -30,10 +30,10 @@ module.exports.templateListHandler = async (event, context, callback) => {
 };
 
 module.exports.addTemplateHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     check("cTemplateType", "cTemplateType is required").not().isEmpty();
     check("cTemplateTypeDesc", "cTemplateTypeDesc is required").not().isEmpty();
     check("iStatusID", "Status is required").not().isEmpty();
@@ -55,10 +55,10 @@ module.exports.addTemplateHandler = async (event, context, callback) => {
 };
 
 module.exports.updateTemplateHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
 
     const errors = validationResult(event);
     if (!errors.isEmpty()) {
@@ -77,10 +77,10 @@ module.exports.updateTemplateHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteTemplateHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+   await dbPromise;
     return await templateTypeServices.templateTypeDelete(event);
   } catch (error) {
     response = {

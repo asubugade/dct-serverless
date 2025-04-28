@@ -3,15 +3,14 @@ import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { CountryService } from "./countryService";
 import { ClsDCT_Common } from "../../commonModule/Class.common";
-
+const dbPromise = oConnectDB();
 const _oCommonCls = new ClsDCT_Common();
 const countryService = new CountryService()
 
 module.exports.listHandler = async (event, context, callback) => {
-    let response;
+    context.callbackWaitsForEmptyEventLoop = false; let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +33,9 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addCountryHandler = async (event, context, callback) => {
-    let response;
+    context.callbackWaitsForEmptyEventLoop = false; let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cCode", "country Code is required").not().isEmpty();
         check("cName", "country name is required").not().isEmpty();
         check("iStatusID", "Status is required").not().isEmpty();
@@ -61,10 +59,9 @@ module.exports.addCountryHandler = async (event, context, callback) => {
 };
 
 module.exports.updateCountryHandler = async (event, context, callback) => {
-    let response;
+    context.callbackWaitsForEmptyEventLoop = false; let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cCode", "country Code is required").not().isEmpty();
         check("cName", "country name is required").not().isEmpty();
         check("iStatusID", "Status is required").not().isEmpty();
@@ -88,10 +85,9 @@ module.exports.updateCountryHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteCountryHandler = async (event, context, callback) => {
-    let response;
+    context.callbackWaitsForEmptyEventLoop = false; let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         _oCommonCls.FunDCT_ApiRequest(event)
         response = await countryService.countryDelete(event);
         callback(null, response);

@@ -2,14 +2,15 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { EmailTemplateService } from "./emailTemplateService";
-
+const dbPromise = oConnectDB();
 const emailTemplateService = new EmailTemplateService()
 
+
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +35,10 @@ module.exports.listHandler = async (event, context, callback) => {
 
 
 module.exports.addEmailTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -60,10 +61,10 @@ module.exports.addEmailTemplateHandler = async (event, context, callback) => {
 
 
 module.exports.updateEmailTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -86,10 +87,10 @@ module.exports.updateEmailTemplateHandler = async (event, context, callback) => 
 
 
 module.exports.deleteEmailTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await emailTemplateService.emailtemplatesDelete(event);
         callback(null, response);
 

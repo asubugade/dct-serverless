@@ -2,14 +2,15 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { MemberService } from "./memberService";
+const dbPromise = oConnectDB();
 
 const memberService = new MemberService()
 
 module.exports.memberTemplateTypeHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +35,10 @@ module.exports.memberTemplateTypeHandler = async (event, context, callback) => {
 
 
 module.exports.memberListHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -62,10 +63,10 @@ module.exports.memberListHandler = async (event, context, callback) => {
 
 
 module.exports.addMemberHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cScac", "Member Code is required").not().isEmpty();
         check("cName", "Member Name is required").not().isEmpty();
         check("cAddress", "Address is required").not().isEmpty();
@@ -101,10 +102,10 @@ module.exports.addMemberHandler = async (event, context, callback) => {
 
 
 module.exports.updateMemberHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cScac", "Member Code is required").not().isEmpty();
       check("cName", "Member Name is required").not().isEmpty();
       check("cAddress", "Address is required").not().isEmpty();
@@ -139,10 +140,10 @@ module.exports.updateMemberHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteMemberHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         response = await memberService.memberDelete(event);
         callback(null, response);
 

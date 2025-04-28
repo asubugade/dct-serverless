@@ -2,15 +2,14 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { AdditionalFieldsService } from "./additionalFieldsService";
-
+const dbPromise = oConnectDB();
 const additionalFieldsService = new AdditionalFieldsService()
 
 module.exports.listHandler = async (event, context, callback) => {
-    
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,11 +33,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addAdditionalFieldsHandler = async (event, context, callback) => {
-    
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cAdditionalFieldText", "cAdditionalFieldText is required").not().isEmpty();
         check("cAdditionalFieldValue", "cAdditionalFieldValue is required").not().isEmpty();
         check("cSelectionType", "cSelectionType is required").not().isEmpty();
@@ -63,11 +61,10 @@ module.exports.addAdditionalFieldsHandler = async (event, context, callback) => 
 };
 
 module.exports.updateAdditionalFieldsHandler = async (event, context, callback) => {
-    
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cAdditionalFieldText", "cAdditionalFieldText is required").not().isEmpty();
         check("cAdditionalFieldValue", "cAdditionalFieldValue is required").not().isEmpty();
         check("cSelectionType", "cSelectionType is required").not().isEmpty();
@@ -92,11 +89,10 @@ module.exports.updateAdditionalFieldsHandler = async (event, context, callback) 
 };
 
 module.exports.deleteAdditionalFieldsHandler = async (event, context, callback) => {
-    
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await additionalFieldsService.additionalFieldsDelete(event);
         callback(null, response);
 

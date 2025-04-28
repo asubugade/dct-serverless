@@ -5,15 +5,16 @@ import { MemberUploadService } from "./memberUploadService";
 import { ClsDCT_Common } from "../../commonModule/Class.common";
 const parser = require('lambda-multipart-parser')
 
+const dbPromise = oConnectDB();
 
 const _oCommonCls = new ClsDCT_Common();
 const memberUploadService = new MemberUploadService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -36,10 +37,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.downloadTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await memberUploadService.downloadTemplate(event);
         callback(null, response);
 
@@ -53,10 +54,10 @@ module.exports.downloadTemplateHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteMemberUploadLogHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const response = await memberUploadService.memberUploadLogDelete(event);
         callback(null, response)
 
@@ -70,10 +71,10 @@ module.exports.deleteMemberUploadLogHandler = async (event, context, callback) =
 };
 
 module.exports.memberUploadTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
 
         const parsedData = await parser.parse({

@@ -2,14 +2,14 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { ProcessService } from "./processService";
-
+const dbPromise = oConnectDB();
 const processService = new ProcessService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -33,10 +33,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addProcessHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cProcessCode", "Module Code is required").not().isEmpty();
         check("cProcessName", "Message Code is required").not().isEmpty();
         check("cProcessDesc", "Message Description is required").not().isEmpty();
@@ -62,10 +62,10 @@ module.exports.addProcessHandler = async (event, context, callback) => {
 };
 
 module.exports.updateProcessHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -87,10 +87,10 @@ module.exports.updateProcessHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteProcessHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event

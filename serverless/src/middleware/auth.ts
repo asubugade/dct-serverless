@@ -26,6 +26,7 @@ import Message, { IMessage } from "../models/GenMessage";
 import { ClsDCT_Common } from '../commonModule/Class.common';
 import { ClsDCT_User } from '../commonModule/Class.user';
 import oConnectDB from '../config/database';
+const dbPromise = oConnectDB();
 
 //To Get Accesscode using iAccessTypeID
 const getAccessCode = async (iAccessTypeID: object) => {
@@ -119,10 +120,10 @@ const oAccessTypes = async () => {
 };
 
 
- const FunDCT_ValidatePermission = async (event) => {
-  await oConnectDB();
-
+const FunDCT_ValidatePermission = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   try {
+    await dbPromise;
     const cToken = event.headers?.['x-wwadct-token'] || event.headers?.['X-WWADCT-TOKEN'];
     const action = event.headers["action"];
     const resource = event.headers["resource"];
@@ -289,9 +290,12 @@ const oAccessTypesOfUser = async (iAccessTypeID = "") => {
 
 
 
-const FunDCT_GetUserPermissions = async (event) => {
+const FunDCT_GetUserPermissions = async (event, context) => {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   try {
-    
+    await dbPromise;
+
     const methodArn = event.methodArn || event.routeArn
     const cToken = event.authorizationToken;
     const oConfIntigration = new ClsDCT_ConfigIntigrations();
@@ -313,7 +317,6 @@ const FunDCT_GetUserPermissions = async (event) => {
     const oPayload: Payload | any = oJwt.verify(cToken, cJwtSecret);
     console.log("oPayload", oPayload);
 
-    await oConnectDB();
 
     const oUserType: any = await User.findOne({ _id: oPayload._id }).lean();
 
@@ -333,7 +336,7 @@ const FunDCT_GetUserPermissions = async (event) => {
     const cUserType = oProcessType.cAccessCode;
 
     // Build context object
-    const context = {
+    const contexts = {
       isAdmin: 'false',
       isDCTUser: 'false',
       isMemberUser: 'false',
@@ -341,17 +344,17 @@ const FunDCT_GetUserPermissions = async (event) => {
     };
 
     if (cUserType === 'Admin') {
-      context.isAdmin = 'true';
-      return generatePolicy(oPayload._id, 'Allow', methodArn, context);
+      contexts.isAdmin = 'true';
+      return generatePolicy(oPayload._id, 'Allow', methodArn, contexts);
     }
 
     const aGrantList = await oAccessTypesOfUser(iAccessTypeID);
-    context.grantList = JSON.stringify(aGrantList || []);
+    contexts.grantList = JSON.stringify(aGrantList || []);
 
-    if (cUserType === 'CENTRIC') context.isDCTUser = 'true';
-    if (cUserType === 'Member') context.isMemberUser = 'true';
+    if (cUserType === 'CENTRIC') contexts.isDCTUser = 'true';
+    if (cUserType === 'Member') contexts.isMemberUser = 'true';
 
-    return generatePolicy(oPayload._id, 'Allow', methodArn, context);
+    return generatePolicy(oPayload._id, 'Allow', methodArn, contexts);
 
   } catch (err) {
     console.error("Authorization error:", err.message);

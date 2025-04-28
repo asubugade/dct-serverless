@@ -3,15 +3,15 @@ import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { LocationService } from "./locationService";
 
-
+const dbPromise = oConnectDB();
 const locationService = new LocationService()
 
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -39,7 +39,7 @@ module.exports.addLocationHandler = async (event, context, callback) => {
     let response;
     try {
         context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -64,7 +64,7 @@ module.exports.updateLocationHandler = async (event, context, callback) => {
     let response;
     try {
         context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -89,8 +89,8 @@ module.exports.deleteLocationHandler = async (event, context, callback) => {
     let response;
     try {
         context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
-       
+       await dbPromise;
+
 
         response = await locationService.locationDelete(event);
 

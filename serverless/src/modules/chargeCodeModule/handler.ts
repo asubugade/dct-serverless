@@ -3,15 +3,15 @@ import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { ClsDCT_Common } from "../../commonModule/Class.common";
 import { ChargeCodeService } from "./chargeSodeService";
-
+const dbPromise = oConnectDB();
 const _oCommonCls = new ClsDCT_Common();
 const chargeCodeService = new ChargeCodeService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +34,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addChargeCodeHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cCode", "Charge Code is required").not().isEmpty();
         check("cName", "chargecode name is required").not().isEmpty();
         check("cChargegroup", "cChargegroup is required").not().isEmpty();
@@ -63,10 +63,10 @@ module.exports.addChargeCodeHandler = async (event, context, callback) => {
 };
 
 module.exports.updateChargeCodeHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -87,11 +87,11 @@ module.exports.updateChargeCodeHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteChargeCodeHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
-      
+        await dbPromise;
+
         response = await chargeCodeService.chargeCodeDelete(event);
         callback(null, response);
 

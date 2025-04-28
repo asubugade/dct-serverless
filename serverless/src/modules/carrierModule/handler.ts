@@ -3,15 +3,15 @@ import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { ClsDCT_Common } from "../../commonModule/Class.common";
 import { CarrierService } from "./carrierService";
-
+const dbPromise = oConnectDB();
 const _oCommonCls = new ClsDCT_Common();
 const carrierService = new CarrierService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +34,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addCarrierHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cCarrierCode", "Module Code is required").not().isEmpty();
         check("cCarrierName", "Message Code is required").not().isEmpty();
         check("cCarrierDesc", "Message Description is required").not().isEmpty();
@@ -63,10 +63,10 @@ module.exports.addCarrierHandler = async (event, context, callback) => {
 };
 
 module.exports.updateCarrierHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -87,10 +87,10 @@ module.exports.updateCarrierHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteCarrierHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await carrierService.carrierDelete(event);
         callback(null, response);
 

@@ -2,17 +2,16 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { CreateTemplateService } from "./createTemplateService";
-
+const dbPromise = oConnectDB();
 const parser = require('lambda-multipart-parser')
 
 const createTemplateService = new CreateTemplateService()
 
 module.exports.excelToJsonHandler = async (event, context, callback) => {
-
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+    await dbPromise;
     const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
     // Parse multipart/form-data
     const parsedData = await parser.parse({
@@ -38,11 +37,11 @@ module.exports.excelToJsonHandler = async (event, context, callback) => {
   }
 };
 
-module.exports.addTemplateHandler = async (event, context, callback) => {
+exports.addTemplateHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+    await dbPromise;
     const errors = validationResult(event);
     if (!errors.isEmpty()) {
       callback(null, event
@@ -63,18 +62,18 @@ module.exports.addTemplateHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteTemplateHandler = async (event, context, callback) => {
-  let response;
+  context.callbackWaitsForEmptyEventLoop = false; let response;
   try {
-      context.callbackWaitsForEmptyEventLoop = false;
-      await oConnectDB();
-      response = await createTemplateService.templateDelete(event);
-      callback(null, response);
+
+    await dbPromise;
+    response = await createTemplateService.templateDelete(event);
+    callback(null, response);
 
   } catch (error) {
-      response = {
-          statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
-          body: JSON.stringify({ error: error.message }),
-      };
-      callback(null, response);
+    response = {
+      statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+      body: JSON.stringify({ error: error.message }),
+    };
+    callback(null, response);
   }
 };

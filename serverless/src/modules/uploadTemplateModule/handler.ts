@@ -5,16 +5,16 @@ import { ClsDCT_Common } from "../../commonModule/Class.common";
 import { UploadTemplateService } from "./uploadTemplateService";
 const parser = require('lambda-multipart-parser')
 
-
+const dbPromise = oConnectDB();
 const _oCommonCls = new ClsDCT_Common();
 
 const uploadTemplateService = new UploadTemplateService()
 
 module.exports.uploadTemplateHandler = async (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false;
   let response;
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+    await dbPromise;
     const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
 
     const parsedData = await parser.parse({

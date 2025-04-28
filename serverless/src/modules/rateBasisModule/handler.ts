@@ -3,14 +3,14 @@ import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { RateBasisService } from "./rateBasisService";
 
-
+const dbPromise = oConnectDB();
 const rateBasisService = new RateBasisService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -33,10 +33,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addRateBasisHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cBasis", "Ratebasis is required").not().isEmpty();
         check("cCode", "Ratebasis Code is required").not().isEmpty();
         check("cName", "Ratebasis name is required").not().isEmpty();
@@ -66,10 +66,10 @@ module.exports.addRateBasisHandler = async (event, context, callback) => {
 };
 
 module.exports.updateRateBasisHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event
@@ -90,10 +90,10 @@ module.exports.updateRateBasisHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteRateBasisHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const errors = validationResult(event);
         if (!errors.isEmpty()) {
             callback(null, event

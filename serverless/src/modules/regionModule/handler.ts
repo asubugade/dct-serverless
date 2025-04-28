@@ -2,14 +2,14 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { RegionService } from "./regionService";
-
+const dbPromise = oConnectDB();
 const regionService = new RegionService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -33,10 +33,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.addRegionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cCode", "Code is required").not().isEmpty();
         check("cName", "Name is required").not().isEmpty();
         check("iStatusID", "Status is required").not().isEmpty();
@@ -61,10 +61,10 @@ module.exports.addRegionHandler = async (event, context, callback) => {
 };
 
 module.exports.updateRegionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("cCode", "Code is required").not().isEmpty();
         check("cName", "Name is required").not().isEmpty();
         check("iStatusID", "Status is required").not().isEmpty();
@@ -89,10 +89,10 @@ module.exports.updateRegionHandler = async (event, context, callback) => {
 };
 
 module.exports.deleteRegionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await regionService.regionDelete(event);
 
         callback(null, response);

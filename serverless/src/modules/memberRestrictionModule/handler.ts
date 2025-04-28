@@ -2,14 +2,15 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { MemberRestrictionService } from "./memberRestrictionService";
+const dbPromise = oConnectDB();
 
 const memberRestrictionService = new MemberRestrictionService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -34,10 +35,10 @@ module.exports.listHandler = async (event, context, callback) => {
 
 
 module.exports.addMemberRestrictionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cType", "Type is required").not().isEmpty();
         check("cExceptionMessage", "Exception Message is required").not().isEmpty();
         check("cAllowedMemberAlias", "Allowed MemberAlias is required").not().isEmpty();
@@ -64,10 +65,10 @@ module.exports.addMemberRestrictionHandler = async (event, context, callback) =>
 
 
 module.exports.updateMemberRestrictionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         check("cType", "Type is required").not().isEmpty();
         check("cExceptionMessage", "Exception Message is required").not().isEmpty();
         check("cAllowedMemberAlias", "Allowed MemberAlias is required").not().isEmpty();
@@ -94,10 +95,10 @@ module.exports.updateMemberRestrictionHandler = async (event, context, callback)
 
 
 module.exports.deleteMemberRestrictionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+       await dbPromise;
         const response = await memberRestrictionService.memberRestrictionDelete(event);
         callback(null, response)
 

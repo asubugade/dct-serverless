@@ -1,47 +1,47 @@
+import mongoose, { ConnectOptions } from 'mongoose';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { ClsDCT_ConfigIntigrations } from './config';
-import { ConnectOptions, connect } from "mongoose";
 
-let isConnected; // Variable to hold the connection status
+let cachedDb: typeof mongoose | null = null;
 
-const oConnectDB = async () => {
-  if (isConnected) {
-    return; // If already connected, return
-}
+const oConnectDB = async (): Promise<typeof mongoose> => {
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    
+    return cachedDb;
+  }
+
   try {
-    let oConfIntigration = new ClsDCT_ConfigIntigrations();    
+    const oConfIntigration = new ClsDCT_ConfigIntigrations();
     const oOptions: ConnectOptions = {
+      serverSelectionTimeoutMS: 3000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 5,
+    dbName: process.env.DB_NAME, // Safe to include again for clarity
     };
-    if (process.env.NODE_ENV == "Server") {
+
+    if (process.env.NODE_ENV === 'Server') {
       const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
-      const response:any = await client.send(
-        new GetSecretValueCommand({
-        SecretId: process.env.SECRET_NAME,
-        }),
+      const response: any = await client.send(
+        new GetSecretValueCommand({ SecretId: process.env.SECRET_NAME })
       );
-      if (response) {
-        const dataString = JSON.parse(response.SecretString);
-        oConfIntigration.cDBName = dataString.cDBName;
-        oConfIntigration.cUserNameDB = dataString.cUserNameDB;
-        oConfIntigration.cPasswordDB = dataString.cPasswordDB;
-        oConfIntigration.cHost = dataString.cHost;
+
+      if (response?.SecretString) {
+        const data = JSON.parse(response.SecretString);
+        oConfIntigration.cDBName = data.cDBName;
+        oConfIntigration.cUserNameDB = data.cUserNameDB;
+        oConfIntigration.cPasswordDB = data.cPasswordDB;
+        oConfIntigration.cHost = data.cHost;
       }
     }
-    
-    
-    let cMongodbURI = 'mongodb://';
-    if (oConfIntigration.cNodeEnv != 'Local') {
-      cMongodbURI = `${cMongodbURI}${oConfIntigration.cUserNameDB}:${oConfIntigration.cPasswordDB}@${oConfIntigration.cHost}/${oConfIntigration.cDBName}`;
-      await connect(cMongodbURI, oOptions);
-      isConnected = true;
-    }
-    else{
-      cMongodbURI = `${cMongodbURI}${oConfIntigration.cUserNameDB}:${oConfIntigration.cPasswordDB}@${oConfIntigration.cHost}/${oConfIntigration.cDBName}`;
-      await connect(cMongodbURI, oOptions);
-      isConnected = true;
-    }
+
+    const cMongodbURI = `mongodb://${oConfIntigration.cUserNameDB}:${oConfIntigration.cPasswordDB}@${oConfIntigration.cHost}/${oConfIntigration.cDBName}`;
+    cachedDb = await mongoose.connect(cMongodbURI, oOptions);
+    console.log("✅ MongoDB connected");
+
+    return cachedDb;
   } catch (err) {
-    console.error(err.message);
+    console.error("❌ MongoDB connection error:", err.message);
+    throw err;
   }
 };
 

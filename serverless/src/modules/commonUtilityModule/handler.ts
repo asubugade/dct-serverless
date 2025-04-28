@@ -3,7 +3,7 @@ import HttpStatusCodes from "http-status-codes";
 import oConnectDB from "../../config/database";
 import { CommonUtilityService } from "./commonUtilityService";
 
-
+const dbPromise = oConnectDB();
 const _oCommonCls = new ClsDCT_Common();
 const commonUtilityService = new CommonUtilityService()
 const parser = require('lambda-multipart-parser')
@@ -36,10 +36,10 @@ module.exports.downloadS3FileHandler = async (event, context, callback) => {
 };
 
 module.exports.listExportHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         _oCommonCls.FunDCT_ApiRequest(event)
         response = await commonUtilityService.listExport(event);
         callback(null, response);
@@ -55,10 +55,10 @@ module.exports.listExportHandler = async (event, context, callback) => {
 };
 
 module.exports.sendInstructionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
         // Parse multipart/form-data
         const parsedData = await parser.parse({

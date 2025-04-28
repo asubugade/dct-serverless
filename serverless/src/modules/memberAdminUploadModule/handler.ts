@@ -3,14 +3,14 @@ import { MemberUploadService } from "../memberUploadModule/memberUploadService";
 import HttpStatusCodes from "http-status-codes";
 import { MemberAdminUploadService } from "./MemberAdminUploadService";
 const parser = require('lambda-multipart-parser')
-
+const dbPromise = oConnectDB();
 
 const memberAdminUploadService = new MemberAdminUploadService()
 module.exports.memberUploadTemplateHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         const bodyBuffer = Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
 
         const parsedData = await parser.parse({

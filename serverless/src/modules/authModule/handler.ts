@@ -5,15 +5,14 @@ import HttpStatusCodes from "http-status-codes";
 import User from "../../models/GenUser";
 import oConnectDB from "../../config/database";
 import oDotenv from 'dotenv';
-
+const dbPromise = oConnectDB();
 const authService = new AuthService();
 oDotenv.config({path: '.env'});
 module.exports.loginHandler = async (event, context, callback) => {
-  
+  context.callbackWaitsForEmptyEventLoop = false;
   let response
   try {
-    context.callbackWaitsForEmptyEventLoop = false;
-    await oConnectDB();
+    await dbPromise;
     const body = JSON.parse(event.body || "{}");
     const { cUsername, cPassword } = body;
 

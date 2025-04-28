@@ -2,14 +2,15 @@ import oConnectDB from "../../config/database";
 import HttpStatusCodes from "http-status-codes";
 import { check, validationResult } from "express-validator";
 import { MemberSubmissionService } from "./memberSubmissionService";
+const dbPromise = oConnectDB();
 
 const memberSubmissionService = new MemberSubmissionService()
 
 module.exports.listHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -32,10 +33,10 @@ module.exports.listHandler = async (event, context, callback) => {
 };
 
 module.exports.memberSubmissionFindHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         check("iOffset", "Offset is required").not().isEmpty();
         check("iLimit", "Offset is required").not().isEmpty();
         const errors = validationResult(event);
@@ -58,10 +59,10 @@ module.exports.memberSubmissionFindHandler = async (event, context, callback) =>
 };
 
 module.exports.downloadMemberSubmissionHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
     let response;
     try {
-        context.callbackWaitsForEmptyEventLoop = false;
-        await oConnectDB();
+        await dbPromise;
         response = await memberSubmissionService.downloadMemberSubmission(event);
         callback(null, response);
 
