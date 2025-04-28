@@ -19,7 +19,7 @@ export class ClsDCT_ConfigIntigrations {
     public cMongodbURI:string;
 
     public cFrontEndURILocal:string;
-    
+    public cBackEndURILocal:string;
     public cJwtSecret:string;
     public cPort:string;
     public cJwtExpiration:string |any;
@@ -43,7 +43,7 @@ export class ClsDCT_ConfigIntigrations {
 
     public cDir:string = __dirname;
     public cDirBasepath:string;
-    public cHome : string
+    public cHome : string | undefined
     public cHomeVarTemp :string
     public cDirAssetPath:string;
 
@@ -83,7 +83,7 @@ export class ClsDCT_ConfigIntigrations {
     public cEmailHost:string;
     public cEmailPort:string;
 
-    public cNodeEnv:string;
+    public cNodeEnv:any;
     public cHost:string;
     public cDBName:string;
     public cUserNameDB:string;
@@ -152,7 +152,7 @@ export class ClsDCT_ConfigIntigrations {
         this.cHome = process.env.Home
         this.cHomeVarTemp = process.env.HOME_DIR
         this.cFrontEndURILocal = process.env.FRONTEND_URI_LOCAL;
-
+        this.cBackEndURILocal = process.env.BACKEND_URI_LOCAL;
         this.cJwtSecret = process.env.cJwtSecret;
         this.cPort = process.env.PORT;
         this.cJwtExpiration = process.env.cJwtExpiration;

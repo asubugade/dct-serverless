@@ -512,7 +512,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     'cType': stream
                 };
                 this.log(`${JSON.stringify(oParams)} parameters sending file to createfiles.py`)
-                const response = await axios.post('http://localhost:5000/api/createfiles', oParams);
+                const response = await axios.post(`${this.cBackEndURILocal}api/createfiles`, oParams);
                 let oResPyProg = JSON.parse(response.data);
                 this.log(`Response fromf create.py Files ${oResPyProg}`)
                 return oResPyProg;
@@ -630,7 +630,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             this.log(`ValidateUploadTemplate Request ==> ${JSON.stringify(oParams)}`);
 
             // Make API call to Python API instead of spawn()
-            const response = await axios.post('http://localhost:5000/api/validateuploadtemplate', oParams);
+            const response = await axios.post(`${this.cBackEndURILocal}api/validateuploadtemplate`, oParams);
 
             this.log(`ValidateUploadTemplate Response ==> ${JSON.stringify(response.data)}`);
             return response.data;

@@ -205,8 +205,6 @@ export class TemplateUploadLogService {
             if (Array.isArray(templateType)) {
                 for (const objectId of templateType) {
                     let oUserTemplateTypeDetails = await TemplateType.findOne({ _id: objectId }).lean() as ITemplateType;
-                    console.log("oUserTemplateTypeDetails======>", oUserTemplateTypeDetails);
-
                     templateTypeArray.push(oUserTemplateTypeDetails.cTemplateType);
                 }
             }
