@@ -1,5 +1,7 @@
 service: my-serverless-app
 
+dashboard: false
+
 provider:
   name: aws
   runtime: nodejs18.x
@@ -7,7 +9,6 @@ provider:
   environment: ${file(./config.yml):environment}
 
 functions:
-
 
 #Middleware
   GetUserPermissions:
