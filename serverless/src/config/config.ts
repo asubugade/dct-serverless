@@ -103,19 +103,19 @@ export class ClsDCT_ConfigIntigrations {
      */
     constructor() {
       oDotenv.config({path: '../../.env'});
-      // if (process.env.NODE_ENV == "Server") {
-      //   this.getSecretsAccess();
-      // }
-      // else if (process.env.NODE_ENV == "Local") {
-      //   this.FunDCT_LoadConfigs(process.env); 
-      // }
-      this.FunDCT_LoadConfigs(process.env); 
+      if (process.env.NODE_ENV == "Server") {
+        this.getSecretsAccess();
+      }
+      else if (process.env.NODE_ENV == "Local") {
+        this.FunDCT_LoadConfigs(process.env); 
+      }
+      // this.FunDCT_LoadConfigs(process.env); 
     }
 
     async getSecretsAccess() {
       try {
         const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
-        const response = await client.send(
+        const response:any = await client.send(
           new GetSecretValueCommand({
           SecretId: process.env.SECRET_NAME,
           }),
@@ -135,10 +135,11 @@ export class ClsDCT_ConfigIntigrations {
      * To load all default configs
      */
     public FunDCT_LoadConfigs(secretDataString) {
-      oDotenv.config({path: '.env'});
+      
+      // oDotenv.config({path: '.env'});
 
         //added below variable in .env files START...
-        this.cNodeEnv = process.env.NODE_ENV;
+        this.cNodeEnv = secretDataString?.NODE_ENV;
 
         //secret-start>>>>>>>>>>>>>>>>>>>
         this.cDBName = secretDataString.cDBName;
@@ -149,14 +150,14 @@ export class ClsDCT_ConfigIntigrations {
         //secret-end>>>>>>>>>>>>>>>>>>>
         
         //added below variable in .env files END.
-        this.cHome = process.env.Home
-        this.cHomeVarTemp = process.env.HOME_DIR
-        this.cFrontEndURILocal = process.env.FRONTEND_URI_LOCAL;
-        this.cBackEndURILocal = process.env.BACKEND_URI_LOCAL;
-        this.cJwtSecret = process.env.cJwtSecret;
-        this.cPort = process.env.PORT;
-        this.cJwtExpiration = process.env.cJwtExpiration;
-        this.cCryptoKey = process.env.cCryptoKey;
+        this.cHome = secretDataString?.Home
+        this.cHomeVarTemp = secretDataString?.HOME_DIR
+        this.cFrontEndURILocal = secretDataString?.FRONTEND_URI_LOCAL;
+        this.cBackEndURILocal = secretDataString?.BACKEND_URI_LOCAL;
+        this.cJwtSecret = secretDataString?.cJwtSecret;
+        this.cPort = secretDataString?.PORT;
+        this.cJwtExpiration = secretDataString?.cJwtExpiration;
+        this.cCryptoKey = secretDataString?.cCryptoKey;
 
         //secret-start>>>>>>>>>>>>>>>>>>>
         this.cAWSBucket = secretDataString.AWS_BUCKET;
@@ -165,17 +166,17 @@ export class ClsDCT_ConfigIntigrations {
         this.cAWSSecretKey = secretDataString.AWS_SECRET_KEY;
         ///secret-end>>>>>>>>>>>>>>>>>>>
 
-        this.cAWSBucketEnv = process.env.AWS_BUCKET_ENV;
-        this.AWS_IAM_ARN = process.env.AWS_IAM_ARN;
-        this.cAWSBucketTemplates = process.env.AWS_BUCKET_TEMPLATES;
-        this.cAWSBucketTemplatesImportHeader = process.env.AWS_BUCKET_TEMPLATES_IMPORTHEADER;
-        this.cAWSBucketTemplatesSampleFile = process.env.AWS_BUCKET_TEMPLATES_SAMPLEFILE;
-        this.cAWSBucketTemplatesUploadTemplate = process.env.AWS_BUCKET_TEMPLATES_UPLOADTEMPLATE;
-        this.cAWSBucketTemplatesDistribution = process.env.AWS_BUCKET_TEMPLATES_DISTRIBUTION;
-        this.cAWSBucketTemplatesConsolidation = process.env.AWS_BUCKET_TEMPLATES_CONSOLIDATION;
-        this.cAWSBucketExportListing = process.env.AWS_BUCKET_EXPORT_LISTING;
-        this.cAWSBucketProfileImage = process.env.AWS_BUCKET_PROFILE_IMAGE;
-        this.cAWSBucketInstructionFile = process.env.AWS_BUCKET_INSTRUCTION_FILE;
+        this.cAWSBucketEnv = secretDataString?.AWS_BUCKET_ENV;
+        this.AWS_IAM_ARN = secretDataString?.AWS_IAM_ARN;
+        this.cAWSBucketTemplates = secretDataString?.AWS_BUCKET_TEMPLATES;
+        this.cAWSBucketTemplatesImportHeader = secretDataString?.AWS_BUCKET_TEMPLATES_IMPORTHEADER;
+        this.cAWSBucketTemplatesSampleFile = secretDataString?.AWS_BUCKET_TEMPLATES_SAMPLEFILE;
+        this.cAWSBucketTemplatesUploadTemplate = secretDataString?.AWS_BUCKET_TEMPLATES_UPLOADTEMPLATE;
+        this.cAWSBucketTemplatesDistribution = secretDataString?.AWS_BUCKET_TEMPLATES_DISTRIBUTION;
+        this.cAWSBucketTemplatesConsolidation = secretDataString?.AWS_BUCKET_TEMPLATES_CONSOLIDATION;
+        this.cAWSBucketExportListing = secretDataString?.AWS_BUCKET_EXPORT_LISTING;
+        this.cAWSBucketProfileImage = secretDataString?.AWS_BUCKET_PROFILE_IMAGE;
+        this.cAWSBucketInstructionFile = secretDataString?.AWS_BUCKET_INSTRUCTION_FILE;
         
         //secret-start>>>>>>>>>>>>>>>>>>>
         //Notification Email settings START..
@@ -195,9 +196,9 @@ export class ClsDCT_ConfigIntigrations {
       //secret-end>>>>>>>>>>>>>>>>>>>
         
         //Secret Manager keys
-        this.SECRET_NAME = process.env.SECRET_NAME;
+        this.SECRET_NAME = secretDataString?.SECRET_NAME;
 
-      if (process.env.NODE_ENV == "Server") {
+      if (secretDataString?.NODE_ENV == "Server") {
         //secret-start>>>>>>>>>>>>>>>>>>>
         this.cDBName = '';
         this.cUserNameDB = '';
