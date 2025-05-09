@@ -58,13 +58,9 @@ class MessageHandling:
         try:
             if (cStatus == 'Success'):
                 cResponse = json.dumps({'cStatus': cStatus, 'oResponse': oResponse})
-                
-                print(cResponse)
                 return cResponse
             elif (cStatus == 'ErrorValidation'):
                 cResponse = json.dumps({'cStatus': cStatus, 'oResponse': oResponse})
-                
-                print(cResponse)
                 return cResponse
             else:
                 pass

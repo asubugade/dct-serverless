@@ -851,7 +851,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 'cSearchFilterQuery': cSearchFilterQuery, 'oSort': oSort,
             };
 
-            const response = await axios.post('http://localhost:5000/api/exportlisting', oParams);
+            const response = await axios.post(`${this.cBackEndURILocal}api/exportlisting`, oParams);
 
             let oResPyProg = JSON.parse(response.data);
             // const cScript = this.cDirPythonPath + 'ExportListing.py';

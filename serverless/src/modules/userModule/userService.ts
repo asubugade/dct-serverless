@@ -74,16 +74,8 @@ export class GenUserService {
       },
       filename: (oReq, file, cb) => {
         let cOriginalFileName = file.filename.split('.').slice(0, -1).join('.');
-        console.log("cOriginalFileName", cOriginalFileName);
-        console.log("file.filename", file.filename);
-
-
         this._cTempProfileImg = cOriginalFileName + '_' + Date.now();
-        console.log("this._cTempProfileImg", this._cTempProfileImg);
-
         this._cFileTypeProfileImage = file.filename.substring(file.filename.lastIndexOf('.'), file.filename.length)
-        console.log("this._cFileTypeProfileImage", this._cFileTypeProfileImage);
-
         cb(null, this._cTempProfileImg + this._cFileTypeProfileImage);
       }
     });
@@ -579,14 +571,9 @@ export class GenUserService {
           .filter(p => typeof p === 'string' && p) // keep only valid non-empty strings
           .slice(0, 3)
           .map(async (oldPassword) => {
-            console.log("newPassword==>", newPassword);
-            console.log("oldPassword==>", oldPassword);
             return await oBcrypt.compare(newPassword, oldPassword);
           })
-      );
-
-      console.log("passwordMatchInHistory===>",passwordMatchInHistory);
-      
+      );      
 
       if (passwordMatchInHistory.some(isMatch => isMatch)) {
         return {

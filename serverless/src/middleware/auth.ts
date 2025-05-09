@@ -315,9 +315,6 @@ const FunDCT_GetUserPermissions = async (event, context) => {
     }
 
     const oPayload: Payload | any = oJwt.verify(cToken, cJwtSecret);
-    console.log("oPayload", oPayload);
-
-
     const oUserType: any = await User.findOne({ _id: oPayload._id }).lean();
 
     if (!oUserType) {
