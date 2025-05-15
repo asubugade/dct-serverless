@@ -161,7 +161,7 @@ export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilte
         { $limit: iLimitDynamic }, //aRequestDetails.iLimit
     ]);
 
-    const now = moment(); // Get current time once
+    // const now = moment(); // Get current time once
     if (aRequestDetails.cProcessCode == 'MEMBER_TEMPLATE_LIST') {
         let cCompanyname: string = companyname;
         const enrichedDocuments = await Promise.all(

@@ -10,7 +10,7 @@ const oConnectDB = async (): Promise<typeof mongoose> => {
     return cachedDb;
   }
 
-  try {
+  try {    
     const oConfIntigration = new ClsDCT_ConfigIntigrations();
     const oOptions: ConnectOptions = {
       serverSelectionTimeoutMS: 3000,
@@ -25,7 +25,7 @@ const oConnectDB = async (): Promise<typeof mongoose> => {
         new GetSecretValueCommand({ SecretId: process.env.SECRET_NAME })
       );
 
-      if (response?.SecretString) {
+      if (response?.SecretString) {        
         const data = JSON.parse(response.SecretString);
         oConfIntigration.cDBName = data.cDBName;
         oConfIntigration.cUserNameDB = data.cUserNameDB;

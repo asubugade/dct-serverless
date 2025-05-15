@@ -102,7 +102,7 @@ export class ClsDCT_ConfigIntigrations {
      * Constructor will load all default configs
      */
     constructor() {
-      oDotenv.config({path: '../../.env'});
+      // oDotenv.config({path: '../../.env'});
       if (process.env.NODE_ENV == "Server") {
         this.getSecretsAccess();
       }
@@ -136,13 +136,14 @@ export class ClsDCT_ConfigIntigrations {
      */
     public FunDCT_LoadConfigs(secretDataString) {
       
-      // oDotenv.config({path: '.env'});
+      // oDotenv.config({path: '.env'});      
 
         //added below variable in .env files START...
         this.cNodeEnv = secretDataString?.NODE_ENV;
 
         //secret-start>>>>>>>>>>>>>>>>>>>
         this.cDBName = secretDataString.cDBName;
+        
         this.cUserNameDB = secretDataString.cUserNameDB;
         this.cPasswordDB = secretDataString.cPasswordDB;
         this.cHost = secretDataString.cHost;
