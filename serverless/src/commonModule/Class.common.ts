@@ -754,7 +754,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 break;
 
             case "CURRENCY":
-                aStaticHeader = ["Currency Code", "Currency Name", "Currency Symbol", "Currency Type", "Comment", "Time Entered", "Entered By",
+                aStaticHeader = ["Currency Code", "Currency Name", "Currency Symbol", "Currency Type", "Description", "Time Entered", "Entered By",
                     "Time Updated", "Updated By", "Status"];
                 break;
 
@@ -764,7 +764,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 break;
 
             case "RATE_BASIS":
-                aStaticHeader = ["Rate Basis", "Basis Code", "Basis Name", "Comment", "Basis Group ID", "Global Conversion", "RFQ Conversion",
+                aStaticHeader = ["Rate Basis", "Basis Code", "Basis Name", "Basis Comment", "Basis Group ID", "Global Conversion", "RFQ Conversion",
                     "Inland", "Time Entered", "Entered By", "Time Updated", "Updated By", "Status"];
                 break;
 

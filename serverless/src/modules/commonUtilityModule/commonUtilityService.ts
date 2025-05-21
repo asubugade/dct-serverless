@@ -3,7 +3,8 @@ import { ClsDCT_EmailTemplate } from '../../commonModule/Class.emailtemplate';
 import HttpStatusCodes from "http-status-codes";
 import Template, { ITemplate } from "../../models/GenTemplate";
 import { getMember } from "./commonUtilityDal";
-
+import TmplMetaData, { ITmplMetaData } from "../../models/Tmplmetadata";
+import GenEmailtemplates, { IEmailtemplates } from "../../models/GenEmailtemplates";
 
 export class CommonUtilityService {
     private _oCommonCls = new ClsDCT_Common();
@@ -118,9 +119,20 @@ export class CommonUtilityService {
                     };
                 }
                 else if (cType == 'EMAIL_TEMPLATES') {
-                    cSearchFilterQuery = {
-                        $match: {
-                            $or: [{ "iProcessID": { "$regex": body.cSearchFilter, "$options": "i" } }, { "cSubject": { "$regex": body.cSearchFilter, "$options": "i" } }]
+                    // cSearchFilterQuery = {
+                    //     $match: {
+                    //         $or: [{ "iProcessID": { "$regex": body.cSearchFilter, "$options": "i" } }, { "cSubject": { "$regex": body.cSearchFilter, "$options": "i" } }]
+                    //     }
+                    // };
+
+                    cSearchFilterQuery = { 
+                        $match: { 
+                            $or: [
+                                { "iProcessID": { "$regex": body.cSearchFilter, "$options": "i" } },
+                                { "cEmailType": { "$regex": body.cSearchFilter, "$options": "i" } },
+                                { "cSubject": { "$regex": body.cSearchFilter, "$options": "i" } },
+                                { "cFrom": { "$regex": body.cSearchFilter, "$options": "i" } }
+                            ]
                         }
                     };
                 }
@@ -263,6 +275,38 @@ export class CommonUtilityService {
             let cFilePath = formData.files[0].filename;
             let bufferContent = formData.files[0].content;
             let oTemplates = await Template.findOne({ _id: iTemplateID }).lean() as ITemplate;
+            let oTemplateMetaData = await TmplMetaData.findOne({ iTemplateID: iTemplateID }).lean() as ITmplMetaData;
+            let oEmailTemplateList;
+            if (oTemplateMetaData.cEmailFrom && oTemplateMetaData.cEmailFrom.trim() !== '') {
+                oEmailTemplateList = await GenEmailtemplates.aggregate([
+                    {
+                        $match: {
+                            cFrom: oTemplateMetaData.cEmailFrom.trim()
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "gen_processes",
+                            localField: "iProcessID",
+                            foreignField: "_id",
+                            as: "oProcessListing"
+                        }
+                    },
+                    { $unwind: "$oProcessListing" },
+                    { $unwind: "$oProcessListing.cProcessCode" },
+                    {
+                        $match: {
+                            "oProcessListing.cProcessCode": "SEND_INSTRUCTION"
+                        }
+                    }
+                ]);
+            }
+            let oEmailTemplateDetailList = oEmailTemplateList[0];
+
+            this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
+            if (oEmailTemplateDetailList) {
+              this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
+            }
             let cTemplateName = oTemplates.cTemplateName;
             let memberlist: any = await getMember(iTemplateID);
             let aMailTo = memberlist.map(x => x.cEmail);
@@ -279,7 +323,7 @@ export class CommonUtilityService {
                 DCTVARIABLE_INSTRUCTIONFILE_CONTENT: cEmailText,
             };
             this._oEmailTemplateCls.FunDCT_SetSubject(cEmailSubject)
-            await this._oEmailTemplateCls.FunDCT_SendNotification('SEND_INSTRUCTION', 'SEND_INSTRUCTION', aVariablesVal, allEmails)
+            await this._oEmailTemplateCls.FunDCT_SendNotification('SEND_INSTRUCTION', oEmailTemplateDetailList.cEmailType, aVariablesVal, allEmails)
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'SEND_INSTRUCTION', 'SEND_INSTRUCTION_SUCCESS', 200, '');
         }
         catch (err) {

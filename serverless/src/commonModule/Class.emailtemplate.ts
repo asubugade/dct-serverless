@@ -318,7 +318,7 @@ export class ClsDCT_EmailTemplate {
         try {
             let oEmailTemplateDetails = await this.FunDCT_SetConfigurationDetails(cProcessCode, cEmailType, cTo);
             if (oEmailTemplateDetails) {
-
+                let senderEmail = oEmailTemplateDetails[0].cFrom;
                 let template = handlebars.compile(this.cEmailBody);
                 if (aVariablesVal.DCTVARIABLE_ADDITIONALEMAILBODY || aVariablesVal.DCTVARIABLE_ADDITIONALEMAILBODY == '') {
                     handlebars.registerHelper("DCTVARIABLE_ADDITIONALEMAILBODY", function (options) {
@@ -331,17 +331,18 @@ export class ClsDCT_EmailTemplate {
                     });
                 }
                 const cFilteredEmailBody = template(aVariablesVal);
-                const uniquecToEmails = Array.from(new Set(this.cTo.split(','))).join(',');
-                const uniquecCcEmails = Array.from(new Set(this.cCc.split(','))).join(',');
-                const uniquecBccEmails = Array.from(new Set(this.cBcc.split(','))).join(',');
+                const uniquecToEmails = Array.from(new Set((this.cTo || '').toString().split(','))).join(',');
+                const uniquecCcEmails = Array.from(new Set((this.cCc || '').toString().split(','))).join(',');
+                const uniquecBccEmails = Array.from(new Set((this.cBcc || '').toString().split(','))).join(',');
                 this.cTo = uniquecToEmails;
                 this.cCc = uniquecCcEmails;
                 this.cBcc = uniquecBccEmails;
                 if (cFilteredEmailBody) {
                     return await this.sendMail({
-                        // from: `WWA <${this.cNotificationEmail}>`,
-                        from: `WWA <${this.cFrom}>`,
-                        // from: this.cFrom,
+                          // from: `WWA <${this.cNotificationEmail}>`,
+                          from: `WWA <${senderEmail}>`,
+                          // from: `WWA <no-reply@wwalliance.com>`,
+                          // from: this.cFrom,
                         to: cTo,
                         cc: this.cCc,
                         bcc: this.cBcc,

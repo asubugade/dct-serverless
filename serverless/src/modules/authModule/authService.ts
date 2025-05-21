@@ -14,7 +14,7 @@ export class AuthService {
     this.loadConfig();
   }
 
-  private loadConfig = async()=> {
+  private loadConfig = async () => {
     const oConfIntigration = new ClsDCT_ConfigIntigrations();
     this.cJwtSecret = oConfIntigration.cJwtSecret;
     this.cJwtExpiration = oConfIntigration.cJwtExpiration;
@@ -36,10 +36,14 @@ export class AuthService {
     }
   }
 
-  public  validateUser = async(cUsername: string, cPassword: string)  => {
+  public validateUser = async (cUsername: string, cPassword: string) => {
     let user = await User.findOne({ cUsername });
     if (!user) {
       return { error: "INVALID_USER" };
+    }
+
+    if (!user.passwordHistory || user.passwordHistory.length === 0) {
+      return { error: "Invalid PasswordHistory" };
     }
 
     const isMatch = await oBcrypt.compare(cPassword, user.cPassword);
@@ -50,7 +54,7 @@ export class AuthService {
     return user;
   }
 
-  public generateToken = async(user: IUser) => {
+  public generateToken = async (user: IUser) => {
     const payload = {
       userId: user.id,
       _id: user._id,

@@ -937,27 +937,62 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                             oTemplateDetails[0].oTemplateMetaDataListing = oStatData
                             await this.FunDCT_SendUploadStatus(oResponseParse, oTemplateDetails, oResPyProg, cDirTemplateStatusFile, oTemplateMetaData);
                         }
-                        else if (bExceptionfound == 'Y') {
+                        else if(bExceptionfound == 'Y' && this._cUploadType !== 'DISTRIBUTE') {
+                            let oEmailTemplateList;
+                            if (oTemplateMetaData.cEmailFrom && oTemplateMetaData.cEmailFrom.trim() !== '') {
+                                oEmailTemplateList = await GenEmailtemplates.aggregate([
+                                    {
+                                        $match: {
+                                            cFrom: oTemplateMetaData.cEmailFrom.trim()
+                                        }
+                                    },
+                                    {
+                                        $lookup: {
+                                            from: "gen_processes",
+                                            localField: "iProcessID",
+                                            foreignField: "_id",
+                                            as: "oProcessListing"
+                                        }
+                                    },
+                                    { $unwind: "$oProcessListing" },
+                                    { $unwind: "$oProcessListing.cProcessCode" },
+                                    {
+                                        $match: {
+                                            "oProcessListing.cProcessCode": "MEMBER_UPLOAD"
+                                        }
+                                    }
+                                ]);
+                            }
+                            let oEmailTemplateDetailList = oEmailTemplateList[0];
                             let aVariablesVal = {
                                 // DCTVARIABLE_USERNAME: this.cUsername,
                                 DCTVARIABLE_USERNAME: 'User',
                                 DCTVARIABLE_TEMPLATENAME: oTemplateDetails[0].cTemplateName,
                                 DCTVARIABLE_DISTRIBUTEDFILE: this.cFrontEndURILocal + "sessions/s3download?downloadpath=" + oResponseParse.cStatusFilePath,
-                                DCTVARIABLE_ADDITIONALEMAILBODY: oTemplateMetaData.cEmailText,
+                                // DCTVARIABLE_ADDITIONALEMAILBODY: oTemplateMetaData.cEmailText,
+                                DCTVARIABLE_EXCEPTION_FOUND: 'Y'
                             };
-                            let oEmailTemplateDetails;
-                            var cQueryUsing: any = {};
-                            cQueryUsing["cEmailType"] = 'UPLOAD_TEMPLATE_EXCEPTION_FOUND';
+                            // let oEmailTemplateDetails ; 
+                            // var cQueryUsing: any = {};
+                            // cQueryUsing["cEmailType"] = 'UPLOAD_TEMPLATE_EXCEPTION_FOUND';
                             this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
-                            this._oEmailTemplateCls.FunDCT_SetCc(oTemplateMetaData.cEmailFrom);
-                            oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
-                            if (oEmailTemplateDetails) {
+                            let cCompanyname = oCurrentUserDetails.cCompanyname;
+                            let oMemberDetails = await GenMember.findOne({ cScac: cCompanyname }).lean() as IMember;
+                            let cCompanyEmails = oMemberDetails.cEmail;
+                            let cCc = [cCompanyEmails, oTemplateMetaData.cEmailFrom]
+                                .filter(Boolean) // removes undefined or empty strings
+                                .map(email => email.trim())
+                                .join(',');
+                                
+                            this._oEmailTemplateCls.FunDCT_SetCc(cCc);
+                            // oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
+                            if (oEmailTemplateDetailList) {
                                 // this._oEmailTemplateCls.FunDCT_SetEmailTemplateID(oEmailTemplateDetails[0]._id)
                                 this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
                             }
-                            this._oEmailTemplateCls.FunDCT_SetSubject(oEmailTemplateDetails[0].cSubject + " " + aVariablesVal.DCTVARIABLE_TEMPLATENAME)
-                            await this._oEmailTemplateCls.FunDCT_SendNotification('UPLOAD_TEMPLATE', 'UPLOAD_TEMPLATE_EXCEPTION_FOUND', aVariablesVal, this.cEmail);
-
+                            this._oEmailTemplateCls.FunDCT_SetSubject("CENTRIC Errors in "+aVariablesVal.DCTVARIABLE_TEMPLATENAME)
+                            await this._oEmailTemplateCls.FunDCT_SendNotification('MEMBER_UPLOAD', oEmailTemplateDetailList.cEmailType, aVariablesVal, this.cEmail);
+                            
                         }
                     }
 
@@ -1191,7 +1226,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             if (this._cUploadType == 'DISTRIBUTE') {
                 let ccEmailArray: any = []; // cc array
                 let sendToEmailArray: any = []; // cc array
-                ccEmailArray.push(this.cEmail) //current login user's email add in cc array
+                sendToEmailArray.push(this.cEmail) //current login user's email add in cc array
 
                 let aVariablesVal = {
                     DCTVARIABLE_USERNAME: 'User',
@@ -1340,7 +1375,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     // DCTVARIABLE_STATUSFILE: this.cFrontEndURILocal + "sessions/s3download?downloadpath=" + oResponseParse.cStatusFilePath,
                     DCTVARIABLE_ADDITIONALEMAILBODY: oTemplateMetaData.cEmailText,
                 };
-                await this._oEmailTemplateCls.FunDCT_SendNotification('UPLOAD_TEMPLATE', 'Template Uploaded', aVariablesVal, this.cEmail)
+                await this._oEmailTemplateCls.FunDCT_SendNotification('UPLOAD_TEMPLATE', 'UPLOAD_TEMPLATE', aVariablesVal, this.cEmail)
             }
         }
     }

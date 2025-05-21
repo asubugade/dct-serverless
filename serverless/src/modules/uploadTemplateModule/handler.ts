@@ -57,3 +57,27 @@ module.exports.uploadTemplateHandler = async (event, context, callback) => {
     callback(null, response);
   }
 };
+
+module.exports.updateStatDocumentHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    let response;
+    try {
+        await dbPromise;
+        const errors = validationResult(event);
+        if (!errors.isEmpty()) {
+            callback(null, event
+                .status(HttpStatusCodes.BAD_REQUEST)
+                .json({ errors: errors.array() }))
+        }
+        response = await uploadTemplateService.updateStatDocument(event);
+
+        callback(null, response);
+
+    } catch (error) {
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response);
+    }
+};

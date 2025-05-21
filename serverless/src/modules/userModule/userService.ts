@@ -565,35 +565,53 @@ export class GenUserService {
         user.passwordHistory = [];
       }
 
+      if (Array.isArray(user.passwordHistory) && user.passwordHistory.length > 0) {
+        // Filter out null or non-string values before comparison
+        const validPasswordHistory = user.passwordHistory
+          .filter(p => typeof p === 'string' && p !== null)
+          .slice(0, 3); // Consider only last 3 valid passwords
 
-      const passwordMatchInHistory = await Promise.all(
-        user.passwordHistory
-          .filter(p => typeof p === 'string' && p) // keep only valid non-empty strings
-          .slice(0, 3)
-          .map(async (oldPassword) => {
+        const passwordMatchInHistory = await Promise.all(
+          validPasswordHistory.map(async (oldPassword) => {
             return await oBcrypt.compare(newPassword, oldPassword);
           })
-      );      
+        );
 
-      if (passwordMatchInHistory.some(isMatch => isMatch)) {
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ error: 'New password must not match any of the last 3 passwords' }),
-        };
-      }
+        if (passwordMatchInHistory.some(isMatch => isMatch)) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'New password must not match any of the last 3 passwords' }),
+          };
+        }
+      }    
+
+      
 
       // Hash the new password
       const salt = await oBcrypt.genSalt(10);
       const hashedNewPassword = await oBcrypt.hash(newPassword, salt);
 
-      user.cPassword = hashedNewPassword;
+      // user.cPassword = hashedNewPassword;
 
-      if (user.passwordHistory.length >= 3) {
-        user.passwordHistory.pop();
-      }
-      user.passwordHistory.unshift(hashedNewPassword);
+      // if (user.passwordHistory.length >= 3) {
+      //   user.passwordHistory.pop();
+      // }
+      // user.passwordHistory.unshift(hashedNewPassword);
 
-      await user.save();
+      // await user.save();
+
+      const updatedHistory = [hashedNewPassword, ...user.passwordHistory.slice(0, 2)];
+
+      // Update user document without triggering full validation
+      await User.updateOne(
+        { cUsername },
+        {
+          $set: {
+            cPassword: hashedNewPassword,
+            passwordHistory: updatedHistory,
+          },
+        }
+      );
 
       return {
         statusCode: 200,

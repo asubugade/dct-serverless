@@ -21,7 +21,48 @@ export class EmailTemplateService {
 
             let cSearchFilterQuery: any;
             if (aRequestDetails.cSearchFilter) {
-                cSearchFilterQuery = { $match: { $or: [{ "iProcessID": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }, { "cSubject": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }] } };
+                // cSearchFilterQuery = { $match: { $or: [{ "iProcessID": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }, { "cSubject": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }] } };
+
+                // cSearchFilterQuery = { $match: { $or: [{ "iProcessID": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }, { "cSubject": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }] } };
+        cSearchFilterQuery = {
+            $match: {
+              $or: [
+                { "iProcessID": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } },
+                { "cEmailType": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } },
+                { "cSubject": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } },
+                { "cFrom": { "$regex": aRequestDetails.cSearchFilter, "$options": "i" } }
+              ]
+            }
+          };
+  
+          // const search = aRequestDetails.cSearchFilter;
+          // cSearchFilterQuery = [
+          //   // Lookup from gen_processes
+          //   {
+          //     $lookup: {
+          //       from: "gen_processes",
+          //       localField: "iProcessID",
+          //       foreignField: "_id",
+          //       as: "oProcess"
+          //     }
+          //   },
+          //   {
+          //     $unwind: {
+          //       path: "$oProcess",
+          //       preserveNullAndEmptyArrays: true
+          //     }
+          //   },
+          //   // Match search text in multiple fields
+          //   {
+          //     $match: {
+          //       $or: [
+          //         { "cSubject": { "$regex": search, "$options": "i" } },
+          //         { "cFrom": { "$regex": search, "$options": "i" } },
+          //         { "oProcess.cProcessName": { "$regex": search, "$options": "i" } } // adjust field name if different
+          //       ]
+          //     }
+          //   }
+          // ];
             } else {
                 cSearchFilterQuery = { $match: {} };
             }

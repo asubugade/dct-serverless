@@ -179,6 +179,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                 if (!oStatus) {
                     return [];
                 }
+                this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
                 let iStatusID = oStatus._id;
                 let cTemplateStatusFile = oResPyProg.oResponse;
                 let existingData = await MemberSubmissionDownloadLog.findOne({ iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq._id) });

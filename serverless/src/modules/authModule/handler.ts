@@ -28,7 +28,10 @@ module.exports.loginHandler = async (event, context, callback) => {
     if (user.error) {
       response = {
         statusCode: HttpStatusCodes.UNAUTHORIZED,
-        body: JSON.stringify({ error: user.error }),
+        body: JSON.stringify({
+          cModule: "USER",
+          cErrorMessage: user.error,
+        }),
       };
       callback(null, response)
     }

@@ -106,14 +106,51 @@ export class MemberAdminUploadService {
                     if (isRateExtendMode == 'true') {
                         const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, iMemberID: iMemberID, cScacCode: cSelectedMemebersModel, cUploadType: 'MEMBER_ADMIN_UPLOAD', iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalComment: cEmailText, isRateExtendMode, memberFilePath };
                         let cEmail = this._oCommonCls.FunDCT_getEmail();
-                        let oEmailTemplateDetails;
+                        // let oEmailTemplateDetails;
                         let iDefaultSubject;
                         let cEmailList;
-                        var cQueryUsing: any = {};
-                        cQueryUsing["cEmailType"] = 'RATE_EXTENDED';
-                        oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
-                        if (oEmailTemplateDetails && oEmailTemplateDetails.length > 0) {
-                            iDefaultSubject = oEmailTemplateDetails[0].cSubject;
+                        // var cQueryUsing: any = {};
+                        // cQueryUsing["cEmailType"] = 'RATE_EXTENDED';
+                        // oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
+                        // if (oEmailTemplateDetails && oEmailTemplateDetails.length > 0) {
+                        //     iDefaultSubject = oEmailTemplateDetails[0].cSubject;
+
+                        let oEmailTemplateList;
+                        if (oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom && oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom.trim() !== '') {
+                            oEmailTemplateList = await GenEmailtemplates.aggregate([
+                                {
+                                    $match: {
+                                        cFrom: oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom.trim()
+                                    }
+                                },
+                                {
+                                    $lookup: {
+                                        from: "gen_processes",
+                                        localField: "iProcessID",
+                                        foreignField: "_id",
+                                        as: "oProcessListing"
+                                    }
+                                },
+                                { $unwind: "$oProcessListing" },
+                                { $unwind: "$oProcessListing.cProcessCode" },
+                                {
+                                    $match: {
+                                        "oProcessListing.cProcessCode": "RATE_EXTEND"
+                                    }
+                                }
+                            ]);
+                        }
+                        let oEmailTemplateDetailList = oEmailTemplateList[0];
+                        this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
+
+                        if (oEmailTemplateDetailList) {
+                            this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
+                        }
+
+                        // cQueryUsing["cEmailType"] = 'RATE_EXTENDED';
+                        // oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
+                        if (oEmailTemplateDetailList && oEmailTemplateDetailList.cSubject) {
+                            iDefaultSubject = oEmailTemplateDetailList.cSubject;
                             cEmailList = cEmail + ',' + cMemberEmail;
                         }
                         const aVariablesVal = {
@@ -121,7 +158,7 @@ export class MemberAdminUploadService {
                             DCTVARIABLE_ADDITIONALEMAILBODY: aRequestDetails.cAddtionalComment,
                         };
                         this._oEmailTemplateCls.FunDCT_SetSubject(aVariablesVal.DCTVARIABLE_TEMPLATENAME + ' (' + iDefaultSubject + ')') //oEmailTemplateDetails[0].cSubject
-                        await this._oEmailTemplateCls.FunDCT_SendNotification('MEMBER_ADMIN_UPLOAD', 'RATE_EXTENDED', aVariablesVal, cEmailList);
+                        await this._oEmailTemplateCls.FunDCT_SendNotification('RATE_EXTEND', oEmailTemplateDetailList.cEmailType, aVariablesVal, cEmailList);
                     }
                     await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, memTmplUploadLogDetail)
                     return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_UPLOADED', 200, aRequestDetails);

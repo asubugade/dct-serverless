@@ -31,13 +31,13 @@ export class TemplateTypeService {
             let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
             let cUserType = oCurrentUserType[0].cAccessCode;
             let cCompanyname: string = this._oCommonCls.oCurrentUserDetails.cCompanyname;
-            const templateTypeArray = [];
+            const templateTypeArray:any = [];
             const templateType = this._oCommonCls.oCurrentUserDetails.cTemplateType;
 
             if (cUserType == 'Member') {
                 if (Array.isArray(templateType)) {
                     for (const objectId of templateType) {
-                        let oUserTemplateTypeDetails = await TemplateType.findOne({ _id: objectId }) as ITemplateType;
+                        let oUserTemplateTypeDetails = await TemplateType.findOne({ _id: objectId }).lean() as ITemplateType;
                         templateTypeArray.push(oUserTemplateTypeDetails['_doc'].cTemplateType);
                     }
                 }
@@ -104,7 +104,7 @@ export class TemplateTypeService {
                     let oCurrentUserType = await this._oCommonCls.FunDCT_GetAccessType();
                     let cUserType = oCurrentUserType[0].cAccessCode;
                     let cCompanyname: string = this._oCommonCls.oCurrentUserDetails.cCompanyname;
-                    const templateTypeArray = [];
+                    const templateTypeArray:any = [];
                     let oTemplateTypeRes;
                     if (!cMode && cMode !== 'TEMPLATE_TYPE') {
                         const templateType = this._oCommonCls.oCurrentUserDetails.cTemplateType;

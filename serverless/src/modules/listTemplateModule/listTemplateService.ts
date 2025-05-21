@@ -6,6 +6,11 @@ import { getMemberUploadLog, getMemberUploadLogCount, getTemplate, getTemplateCo
 import moment from "moment";
 import TmplUploadLog, { ITmplUploadLog } from "../../models/Tmpluploadlog"
 import * as XLSX from 'xlsx';
+import TmplMetaData, { ITmplMetaData } from "../../models/Tmplmetadata";
+import GenEmailtemplates, { IEmailtemplates } from "../../models/GenEmailtemplates";
+import { ClsDCT_EmailTemplate } from "../../commonModule/Class.emailtemplate";
+import GenMember, { IMember } from "../../models/GenMember";
+import { _ } from "lodash"
 
 
 
@@ -13,6 +18,8 @@ var mongoose = require('mongoose')
 
 export class ListTemplateService {
   private _oCommonCls = new ClsDCT_Common();
+  private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
+
 
   public templateListing = async (event) => {
     try {
@@ -963,6 +970,118 @@ export class ListTemplateService {
       statusCode: 200,
       body: JSON.stringify(workSheetsFromFile),
     };
+  }
+
+  public updateTemplateDocument = async (event) => {
+    try {
+
+      const { iTemplateID, cTemplateName, tCuttoffdate, aMemberCutoffs, cEmailTemplateID, cEmailFrom, optionSendMail } = JSON.parse(event.body);
+      let oMemberEmailAndScac: any = [];
+      let cAdditionalEmail = '';
+      var tNow = new Date(tCuttoffdate);
+      const cuttoffdate = moment(tNow).format('YYYY-MM-DD HH:mm:ss');
+      const aTmplMetaData = { tCuttoffdate: cuttoffdate }
+      let oTemplate = await TmplMetaData.findOne({ _id: iTemplateID }).lean() as ITmplMetaData;
+      if (oTemplate) {
+        let cEmailFrom = oTemplate.cEmailFrom;
+
+        let oEmailTemplateList;
+        if (oTemplate.cEmailFrom && oTemplate.cEmailFrom.trim() !== '') {
+          oEmailTemplateList = await GenEmailtemplates.aggregate([
+            {
+              $match: {
+                cFrom: oTemplate.cEmailFrom.trim()
+              }
+            },
+            {
+              $lookup: {
+                from: "gen_processes",
+                localField: "iProcessID",
+                foreignField: "_id",
+                as: "oProcessListing"
+              }
+            },
+            { $unwind: "$oProcessListing" },
+            { $unwind: "$oProcessListing.cProcessCode" },
+            {
+              $match: {
+                "oProcessListing.cProcessCode": "REVISE_CUTOFF"
+              }
+            }
+          ]);
+        }
+        let oEmailTemplateDetailList = oEmailTemplateList[0];
+
+        this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
+        if (oEmailTemplateDetailList) {
+          this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
+        }
+
+        oTemplate = await TmplMetaData.findOneAndUpdate(
+          { _id: iTemplateID },
+          { $set: aTmplMetaData },
+          { new: true }
+        ).lean() as ITmplMetaData;
+        cAdditionalEmail = oTemplate['_doc'].cAdditionalEmail;
+        const aMemberCutoffList = _.keys(aMemberCutoffs);
+        for (const aMemberScac of aMemberCutoffList) {
+          const data = `aMemberCutoffs.${aMemberScac}.0.tCuttoffdate`;
+          oTemplate = await TmplMetaData.findByIdAndUpdate(
+            { _id: iTemplateID },
+            { $set: { [data]: cuttoffdate } },
+            { new: true }
+          ).lean() as ITmplMetaData;
+          let oMembersList = await GenMember.findOne({ cScac: aMemberScac }).lean() as IMember;
+          if (oMembersList) {
+            let cEmail = oMembersList['_doc'].cEmail;
+            const newArray = { cEmail, aMemberScac };
+            oMemberEmailAndScac.push(newArray);
+            // oMemberEmail.push(aMemberScac, oMembersList['_doc'].cEmail);
+            // let emailValue: string = oMembersList['_doc'].cEmail;
+            // oMemberEmailAndScac[aMemberScac] = emailValue;
+
+          }
+        }
+        let aVariablesVal = {
+          iTemplateID,
+          cTemplateName,
+          tCuttoffdate,
+          aMemberCutoffs,
+          cEmailFrom,
+          cAdditionalEmail,
+          optionSendMail,
+          oMemberEmailAndScac,
+          DCTVARIABLE_MEMBERNAME: '',
+          DCTVARIABLE_TEMPLATENAME: cTemplateName,
+          DCTVARIABLE_TCUTOFFDATEMEMBER: tCuttoffdate,
+          oEmailTemplateDetailList
+        }
+        await this.sendMail(aVariablesVal);
+        return await this._oCommonCls.FunDCT_Handleresponse('Success', 'STATUS', 'STATUS_UPDATED', 200, oTemplate);
+      } else {
+        return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'SERVER_ERROR');
+      }
+    }
+    catch (err) {
+      return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'SERVER_ERROR');
+    }
+  }
+
+  async sendMail(data: any) {
+    if (data.optionSendMail == 'SendMailToRFQTeamOnly') {
+      await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, data.cEmailFrom);
+    }
+    else if (data.optionSendMail == 'SendMailToAllMember') {
+      for (const item of data.oMemberEmailAndScac) {
+        data.DCTVARIABLE_MEMBERNAME = item.aMemberScac;
+        await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, item.cEmail);
+      }
+      if (data.cAdditionalEmail == 'null' || data.cAdditionalEmail == '') {
+      }
+      else {
+        await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, data.cAdditionalEmail);
+      }
+    }
   }
 
 }

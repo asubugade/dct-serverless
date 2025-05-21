@@ -36,6 +36,7 @@ import User, { IUser } from "../models/GenUser";//code added by spirgonde for Au
 import GenTemplateType, { ITemplateType } from "../models/GenTemplateType";
 const BufferReader = require('buffer-reader');
 
+import GenEmailtemplates, { IEmailtemplates } from "../models/GenEmailtemplates";
 
 export class ClsDCT_ConsolidateTemplate extends ClsDCT_Common {
     
@@ -230,6 +231,32 @@ export class ClsDCT_ConsolidateTemplate extends ClsDCT_Common {
     }
 
     public async FunDCT_SendConsolidateFile(cTemplateStatusFile, oTemplateDetails, oParams) {
+        let oEmailTemplateList;
+        if (oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom && oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom.trim() !== '') {
+            oEmailTemplateList = await GenEmailtemplates.aggregate([
+                {
+                    $match: {
+                        cFrom: oTemplateDetails[0].oTemplateMetaDataListing.cEmailFrom.trim()
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "gen_processes",
+                        localField: "iProcessID",
+                        foreignField: "_id",
+                        as: "oProcessListing"
+                    }
+                },
+                { $unwind: "$oProcessListing" },
+                { $unwind: "$oProcessListing.cProcessCode" },
+                {
+                    $match: {
+                        "oProcessListing.cProcessCode": "CONSOLIDATE_TEMPLATE"
+                    }
+                }
+            ]);
+        }
+        let oEmailTemplateDetailList = oEmailTemplateList[0];
         // let CONSOLIDATEFILE = this.cFrontEndURILocal + "sessions/s3download?downloadpath=" + cTemplateStatusFile;
         let CONSOLIDATEFILE = `${this.cFrontEndURILocal}sessions/s3download?downloadpath=${cTemplateStatusFile}`;
 
@@ -241,7 +268,7 @@ export class ClsDCT_ConsolidateTemplate extends ClsDCT_Common {
             // DCTVARIABLE_CONSOLIDATEFILE: CONSOLIDATEFILE,
         };
         let cEmail = this._oCommonCls.FunDCT_getEmail();
-        const aUploadTemplateEmail = this._oEmailTemplateCls.FunDCT_SendNotification('CONSOLIDATE_TEMPLATE', 'Consolidate Report', aVariablesVal, cEmail)
+        const aUploadTemplateEmail = this._oEmailTemplateCls.FunDCT_SendNotification('CONSOLIDATE_TEMPLATE', oEmailTemplateDetailList.cEmailType, aVariablesVal, cEmail)
     }
 
     //code added by spirgonde for Autogenerate Consolidation report on template expired start ....

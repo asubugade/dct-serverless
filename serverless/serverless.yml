@@ -1,6 +1,7 @@
 service: my-serverless-app
 
-dashboard: false
+dashboard:
+  disableMonitoring: true
 
 provider:
   name: aws
@@ -325,7 +326,7 @@ functions:
             type: request
 
 
-  checkTemplatePathHandler:
+  checkTemplatePath:
     handler: src/modules/listTemplateModule/handler.checkTemplatePathHandler
     timeout: 900
     events:
@@ -333,6 +334,21 @@ functions:
           path: api/listtemplate/checktemplatepath
           method: post
           cors: true
+
+
+  updateTemplateDocument:
+    handler: src/modules/listTemplateModule/handler.updateTemplateDocumentHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/{id}
+          method: put
+          cors: true
+          # authorizer:
+          #   name: GetValidatePermission
+          #   identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+          #   resultTtlInSeconds: 0
+          #   type: request
 
 
 #AccessType Module Routes 
@@ -350,6 +366,16 @@ functions:
             identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
             resultTtlInSeconds: 0
             type: request
+
+  availableAccessTypeList:
+    handler: src/modules/accessTypeModule/handler.listHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/accesstype/listAvailableAccess
+          method: post
+          cors: true
+        
 
 
   addAccessType:
@@ -1557,6 +1583,20 @@ functions:
               resultTtlInSeconds: 0
               type: request
 
+  updateStatDocument:
+      handler: src/modules/uploadTemplateModule/handler.updateStatDocumentHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/uploadtemplate/{id}
+            method: put
+            cors: true
+            # authorizer:
+            #   name: GetValidatePermission
+            #   identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            #   resultTtlInSeconds: 0
+            #   type: request
+
 
 
 # Common Utility Modules Routes
@@ -1830,6 +1870,9 @@ functions:
 # package:
 #   include:
 #     - src/script_files/ValidateUploadTemplate.py   
+
+package:
+  individually: true
 
 plugins:
   - serverless-offline

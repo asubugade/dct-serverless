@@ -231,6 +231,30 @@ module.exports.checkTemplatePathHandler = async (event, context, callback) => {
     }
 };
 
+module.exports.updateTemplateDocumentHandler = async (event, context, callback) => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    let response;
+    try {
+        await dbPromise;
+        const errors = validationResult(event);
+        if (!errors.isEmpty()) {
+            callback(null, event
+                .status(HttpStatusCodes.BAD_REQUEST)
+                .json({ errors: errors.array() }))
+        }
+        response = await listTemplateServices.updateTemplateDocument(event);
+
+        callback(null, response);
+
+    } catch (error) {
+        response = {
+            statusCode: HttpStatusCodes.INTERNAL_SERVER_ERROR,
+            body: JSON.stringify({ error: error.message }),
+        };
+        callback(null, response);
+    }
+};
+
 
 
 

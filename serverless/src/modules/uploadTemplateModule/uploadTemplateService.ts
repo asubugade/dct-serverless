@@ -8,12 +8,18 @@ import TemplateType from "../../models/GenTemplateType";
 import GenLane from "../../models/GenLane";
 import { ClsDCT_ManageTemplate } from "../../commonModule/Class.managetemplate";
 import GenLaneSchedule from "../../models/GenLaneSchedule";
+import { ClsDCT_EmailTemplate } from "../../commonModule/Class.emailtemplate";
+import GenEmailtemplates, { IEmailtemplates } from "../../models/GenEmailtemplates";
+import Template from "../../models/GenTemplate";
+import GenMember, { IMember } from "../../models/GenMember";
 const AdmZip = require('adm-zip');
 
 
 
 export class UploadTemplateService {
     private _oCommonCls = new ClsDCT_Common();
+    private _oEmailTemplateCls = new ClsDCT_EmailTemplate();
+
 
     private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
 
@@ -87,5 +93,103 @@ export class UploadTemplateService {
         }
     }
 
+    public updateStatDocument = async (event) => {
+        try {
+            const body = JSON.parse(event.body);
+            //let oStatData = await TmplMetaData.findOne({ _id: mongoose.Types.ObjectId(req.params.iTemplateMetaDataID)}).lean();
+            let oStatData = await TmplMetaData.findById(body.iTemplateMetaDataID);
+            let oMemberEmail: any;
+            if (oStatData) {
+
+                let oEmailTemplateList;
+                if (oStatData.cEmailFrom && oStatData.cEmailFrom.trim() !== '') {
+                    oEmailTemplateList = await GenEmailtemplates.aggregate([
+                        {
+                            $match: {
+                                cFrom: oStatData.cEmailFrom.trim()
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: "gen_processes",
+                                localField: "iProcessID",
+                                foreignField: "_id",
+                                as: "oProcessListing"
+                            }
+                        },
+                        { $unwind: "$oProcessListing" },
+                        { $unwind: "$oProcessListing.cProcessCode" },
+                        {
+                            $match: {
+                                "oProcessListing.cProcessCode": "REVISE_CUTOFF"
+                            }
+                        }
+                    ]);
+                }
+                let oEmailTemplateDetailList = oEmailTemplateList[0];
+
+                this._oEmailTemplateCls.FunDCT_ResetEmailTemplate();
+                if (oEmailTemplateDetailList) {
+                    this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
+                }
+
+                let aMemberScac = body.aMemberScac;
+                let oTemplateMeta = await TmplMetaData.findOne({ _id: body.iTemplateMetaDataID }).lean() as ITmplMetaData;
+                let oTemplate = await Template.findOne({ _id: oTemplateMeta['_doc'].iTemplateID }).lean() as any;
+                let cTemplateName = oTemplate['_doc'].cTemplateName;
+                let tCuttoffdate = body.tUpdatedCuttoffDate;
+                var tNow = new Date(tCuttoffdate);
+                const tCutoffConverted: string = moment(tNow).format('YYYY-MM-DD HH:mm:ss');//changed hh to HH by spirgonde
+                let tUpdatedCuttoffDate = tCutoffConverted;
+                let data = "aMemberCutoffs." + aMemberScac + ".0.tCuttoffdate";
+                let oMembersList = await GenMember.findOne({ cScac: aMemberScac }).lean() as IMember;
+                if (oMembersList) {
+                    oMemberEmail = oMembersList['_doc'].cEmail;
+                }
+                oStatData = await TmplMetaData.findByIdAndUpdate(body.iTemplateMetaDataID,
+                    { $set: { [data]: tUpdatedCuttoffDate } },
+                    { new: true }
+                );
+
+                let aVariablesVal = {
+                    iTemplateID: body.iTemplateID,
+                    cTemplateName: body.cTemplateName,
+                    tCuttoffdate: body.tCuttoffdate,
+                    aMemberCutoffs: body.aMemberCutoffs,
+                    aMemberScac: body.aMemberScac,
+                    cEmailFrom: body.cEmailFrom,
+                    cAdditionalEmail: body.cAdditionalEmail ? body.cAdditionalEmail : null,
+                    optionSendMail: body.optionSendMail,
+                    oMemberEmail,
+                    DCTVARIABLE_MEMBERNAME: aMemberScac,
+                    DCTVARIABLE_TEMPLATENAME: cTemplateName,
+                    DCTVARIABLE_TCUTOFFDATEMEMBER: tCuttoffdate,
+                    oEmailTemplateDetailList
+                }
+
+                await this.FunDCT_SendMail(aVariablesVal);
+                return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CREATE_TEMPLATE', 'CUTOFF_UPDATED', 200, oStatData);
+            } else {
+                return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, 'Error in Rescheule cutoff');
+            }
+        } catch (err) {
+            return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);
+        }
+    }
+
+
+    async FunDCT_SendMail(data) {
+        if (data.optionSendMail == 'SendMailToRFQTeamOnly') {
+            await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, data.cEmailFrom);
+        }
+        else if (data.optionSendMail == 'SendMailToAllMember') {
+            data.DCTVARIABLE_MEMBERNAME = data.aMemberScac;
+            await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, data.oMemberEmail);
+            if (data.cAdditionalEmail == null || data.cAdditionalEmail == '') { }
+            else {
+                await this._oEmailTemplateCls.FunDCT_SendNotification('REVISE_CUTOFF', data.oEmailTemplateDetailList.cEmailType, data, data.cAdditionalEmail);
+            }
+        }
+    }
 
 }
