@@ -521,8 +521,11 @@ def FunDCT_GetHeaderValueForColumn(oSheetUploaded, jColumn):
     try:
         cCellVal = None
         for iIndexRow in range(1, 100):
-            cCellVal = oSheetUploaded.cell(row=iIndexRow, column=jColumn).value
-            if cCellVal is not None:
+            try:
+                cCellVal = str(oSheetUploaded.iat[iIndexRow-1, jColumn-1])
+            except:
+                pass
+            if cCellVal :
                 return cCellVal
     except Exception as e:
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_GetHeaderValueForColumn Error while parsing file due to ' + str(e))
@@ -535,17 +538,16 @@ def FunDCT_GetValidationForColumn(validations,iCol):
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_GetValidationForColumn Error while parsing file due to ' + str(e))
 def FunDCT_CheckAvailableInOtherCharge(oPostParameters):
     try:
-        iMaxRowUploaded = oPostParameters['oSheetUploaded'].max_row
-        iMaxColumnUploaded = oPostParameters['oSheetUploaded'].max_column
+        iMaxRowUploaded ,iMaxColumnUploaded = oPostParameters['oSheetUploaded'].shape
 
         iIndex = 0
         for iIndexRow in range(1, iMaxRowUploaded+1):
             # for jIndexCol in range(1, iMaxColumnUploaded + 1):
             for jIndexCol in model_common.FunDCT_GetSCACHeadersIndex(oPostParameters['oValidationsDetails']):
                 
-                oCell = oPostParameters['oSheetUploaded'].cell(row=iIndexRow, column=jIndexCol)
-                if oCell.value is not None:
-                    cCellVal = str(oCell.value).strip()
+                oCell = oPostParameters['oSheetUploaded'].iat[iIndexRow-1, jIndexCol-1]
+                if oCell :
+                    cCellVal = str(oCell).strip()
                     if cCellVal == str(oPostParameters['oCellVal']).strip():
                         cHeaderVal = FunDCT_GetHeaderValueForColumn(oPostParameters['oSheetUploaded'], jIndexCol)
                         # below code is commented due to scaccolumn identifying based on values not on validations
@@ -984,7 +986,7 @@ def FunDCT_RemoveUnmappedChargesColumn(oPostParameters):
         oPostParameters['aMappedScacColumns'] = defaultdict(dict)
         oPostParameters['aMappedScacColumns'] = FunDCT_SetMappendColumns(oPostParameters)
         oPostParameters['aMergedCellRanges'] = defaultdict(dict)
-        oPostParameters['aMergedCellRanges'] = FunDCT_GetMergedCellRanges(oPostParameters['oSheetUploaded'], oPostParameters['aMergedCellRanges'])
+        oPostParameters['aMergedCellRanges'] = FunDCT_GetMergedCellRanges(oPostParameters['oSheetTemplate'], oPostParameters['aMergedCellRanges'])
         if int(oPostParameters['iMaxDepthHeaders']) == 1:
             oPostParameters['aMergedCellRanges'] = FunDCT_GetMappigColumnRangesForMaxDepept1(oPostParameters['oValidationsDetails'])
         # oWorkBookWriteMember.save(oPostParameters['cMemberDistributionFilePath'])
@@ -1096,7 +1098,7 @@ def FunDCT_RemoveUnmappedChargesColumn(oPostParameters):
                 
                 for nCel in eachCell:
                     jjj+=1
-                    if nCel.value is not None:
+                    if nCel.value:
                         ranges = f"{get_column_letter(iii)}1:{get_column_letter(jjj-1)}1"
                         oWorkSheetMember.merge_cells(ranges)
                         # nCel.alignment =Alignment(horizontal="center", vertical="center",wrap_text=True)
@@ -1184,8 +1186,7 @@ def FunDCT_Remove_unused_columns(wb:openpyxl):
  
 def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
     try:
-        iMaxRowUploaded = oPostParameters['oSheetUploaded'].max_row
-        iMaxColumnUploaded = oPostParameters['oSheetUploaded'].max_column
+        iMaxRowUploaded,iMaxColumnUploaded = oPostParameters['oSheetUploaded'].shape
         iMaxDepthHeaders = model_common.FunDCT_GetMaxDepthHeader(oPostParameters['iTemplateID'])
 
         
@@ -1208,7 +1209,8 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
             # if aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'] == 'SERVICE INFO':
             if aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'] == 'SERVICE INFO':
                 continue
-            iColumnIndex = FunDCT_GetColumnIndex(oPostParameters['oSheetUploaded'], aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
+            # iColumnIndex = FunDCT_GetColumnIndex(oPostParameters['oSheetUploaded'], aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
+            iColumnIndex = list(oPostParameters['oSheetUploaded'].loc[iMaxDepthHeaders-1].values).index(aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
             aMemberScacColIndex.append(iColumnIndex)
             aMemberScacColLabel[iColumnIndex]['cHeaderLabel'] = str(aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel']).strip()
             oPostParameters['aCountMappedColumn'][str(oPostParameters['oCellVal']).strip()][aMemberScacColLabel[iColumnIndex]['cHeaderLabel']] = {
@@ -1219,16 +1221,19 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
         iMaxRow = iMaxDepthHeaders + 1
         mappingSCAC =  getSCAC_columnMapping(oPostParameters['oValidationsDetails'])
         dataValidationDict = dict() 
+        sheetname = oWorkSheetMember.title
+        sheetCo_RelatedDataColWise = oPostParameters['sheetCo_RelatedData']['1']
         for iIndexRow in range(1, iMaxRowUploaded + 1):
+        # for iIndexRow, row in enumerate(oPostParameters['oSheetUploaded'], 1):
             bCheck = False
-            listofmemberscaccolumn = [str(oPostParameters['oSheetUploaded'].cell(row=iIndexRow, column=x).value).strip() for x  in aMemberScacColIndex ]
+            listofmemberscaccolumn = [str(oPostParameters['oSheetUploaded'].iat[iIndexRow-1,x]).strip() for x  in aMemberScacColIndex ]
             for jIndexCol in range(1, iMaxColumnUploaded + 1):
+            # for jIndexCol,oMemberCellVal in enumerate(row,1 ):
                 oDetails = oPostParameters['oValidationsDetails'][jIndexCol-1]
                 conditinalValidation = oDetails['cValidationsCondition']
                 validations = oDetails['cValidations']
                 
-                oMemberCellVal = oPostParameters['oSheetUploaded'].cell(
-                    row=iIndexRow, column=jIndexCol)
+                oMemberCellVal = str(oPostParameters['oSheetUploaded'].iat[iIndexRow-1, jIndexCol-1])
                 # vAligmentCell = oMemberCellVal.alignment.vertical
                 vAligmentCell = 'center'
                 # hAligmentCell = oMemberCellVal.alignment.horizontal
@@ -1236,10 +1241,15 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
                 # bwrap = True if oMemberCellVal.alignment.wrapText else False
                 bwrap = True
                 if iIndexRow <= iMaxDepthHeaders:
-                    oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).value = oMemberCellVal.value
+                    oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).value = oMemberCellVal
                     cCommentStr = oWorkSheetSampoleFileCopyComment.cell(row=iIndexRow, column=jIndexCol).comment
-                    cTextColor = FunDCT_GetTextColor(oMemberCellVal)
-                    cTextBGColor = FunDCT_GetBackColor(oMemberCellVal,cTextColor)
+                    # oDetailsHeader = headerValidaton[jIndexCol-1]
+                    # cTextColor = oDetailsHeader['cTextColorRow']['hex']
+                    # cTextBGColor = oDetailsHeader['cBackColorRow']['hex']
+                    
+                    
+                    cTextColor = FunDCT_GetTextColor(oWorkSheetSampoleFileCopyComment.cell(row=iIndexRow, column=jIndexCol))
+                    cTextBGColor = FunDCT_GetBackColor(oWorkSheetSampoleFileCopyComment.cell(row=iIndexRow, column=jIndexCol),cTextColor)
                     oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).font = Font(color=cTextColor)
                     oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).fill = PatternFill(fgColor=cTextBGColor,fill_type = "solid")
                     thin_border = Side(style="thin")
@@ -1248,28 +1258,34 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
                     if str(cCommentStr).strip() != '' and cCommentStr is not None:
                             oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).comment = cCommentStr
                         
-                # oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).value = oMemberCellVal.value
+                    oWorkSheetMember.cell(row=iIndexRow, column=jIndexCol).value = oMemberCellVal
                 if str(oPostParameters['oCellVal']).strip() in listofmemberscaccolumn:
                     bCheck = True
                     rowTextColor = oDetails['cTextColorRow']['hex']
                     rowBGColor = oDetails['cBackColorRow']['hex']
-                    if oMemberCellVal.data_type == 'f':
-                        oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = oMemberCellVal.value
-                        formula = oMemberCellVal.value
+                    # if str(oMemberCellVal).startswith('='):
+                    if sheetCo_RelatedDataColWise.get(str(jIndexCol-1)).get('formula'):
+                        # oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = oMemberCellVal
+                        formula = sheetCo_RelatedDataColWise.get(str(jIndexCol-1)).get('formula')
                         matches = re.findall(r"([A-Z]+[0-9]+)\b",formula)
                         for mtch in matches:
                             rownumber = re.search(r'([0-9]+)\b',str(mtch)).group(1)
                             newR = mtch.replace(rownumber,str(iMaxRow))
                             formula = formula.replace(mtch,newR)
-                            oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = formula
+                        oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = formula
                         oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).font = Font(color=rowTextColor)
                         oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).fill = PatternFill(fgColor=rowBGColor,fill_type = "solid")
                         oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).alignment = Alignment(horizontal=hAligmentCell, vertical=vAligmentCell)      
                     else:
-                        if oMemberCellVal.number_format in ['0%', '0.00%']:
-                            oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = f"{round(oMemberCellVal.value * 100, 2)}%"
+                        formate = sheetCo_RelatedDataColWise.get(str(jIndexCol-1)).get('number_format')
+                        if '%' in str(formate):
+                            try:
+                                oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = f"{round(float(oMemberCellVal) * 100, 2)}%"
+                            except:
+                                oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = oMemberCellVal
+                                
                         else:
-                            oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = oMemberCellVal.value
+                            oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).value = oMemberCellVal
                         
                         oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).font = Font(color=rowTextColor)
                         oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).fill = PatternFill(fgColor=rowBGColor,fill_type = "solid")
@@ -1287,7 +1303,7 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
                             try:
                                 if mappingSCAC.get(sSCACname):
                                     scacint = int(mappingSCAC.get(sSCACname))
-                                    cValueCatch = oPostParameters['oSheetUploaded'].cell(row=iIndexRow, column=scacint+1).value
+                                    cValueCatch = oPostParameters['oSheetUploaded'].iat[iIndexRow-1, scacint]
                                     if cValueCatch:
                                         if str(oPostParameters['oCellVal']).strip() == str(cValueCatch).strip():
                                             oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).protection = Protection(locked=False)
@@ -1311,6 +1327,9 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
                             
                                 if 'UNLOCKED' in eachVal:
                                     oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).protection = Protection(locked=False)
+
+                                
+
                                 if 'UNLOCKEDIF' in eachVal:
                                     conditionalString = eachVal.replace('(','').replace(')','').replace('UNLOCKEDIF','')
                                     # iValidationsDetails = oPostParameters['oValidationsDetails']
@@ -1322,7 +1341,7 @@ def FunDCT_CopyOrDeleteIrrelevantRows(oPostParameters, oWorkSheetMember):
                                     if matchingIndex is not None:
                                         cColumnLetterofRelatedColmn = get_column_letter(int(matchingIndex + 1))  # +1 if using 1-based indexing
 
-                                        oRCellVal = oPostParameters['oSheetUploaded'].cell(row=iIndexRow, column=int(matchingIndex + 1)).value
+                                        oRCellVal = str(oPostParameters['oSheetUploaded'].iat[iIndexRow-1, int(matchingIndex)])
                                         if oRCellVal in str(oPostParameters['cMemberDistributionFilePath']) :
                                             oWorkSheetMember.cell(row=iMaxRow, column=jIndexCol).protection = Protection(locked=False)
             
@@ -1391,9 +1410,14 @@ def FunDCT_PreparedUploadedStat(oPostParameters):
 
 def FunDCT_CreateAndCopyHeader(oPostParameters):
     try:
+        
+        # tdf = oPostParameters['oSheetUploaded']
+        # tdf = tdf[(tdf[oPostParameters['lScac']] == oPostParameters['_cCompanyname']).any(axis=1)]
+        # tdf.to_excel(oPostParameters['cMemberDistributionFilePath'],na_rep='',header=False,index=False,index_label=None,startrow=int(oPostParameters['iMaxDepthHeaders'])+1)
         oWorkBookWriteMember = openpyxl.load_workbook(
             oPostParameters['cMemberDistributionFilePath'])
         oWorkSheetMember = oWorkBookWriteMember.active
+        
         # Column width set
         for col in range(1, 101):  # 1 to 50 (A to AX)`
             col_letter = openpyxl.utils.get_column_letter(col)
@@ -1405,7 +1429,7 @@ def FunDCT_CreateAndCopyHeader(oPostParameters):
         
       
         oPostParameters['oWorkBookWriteMember'] = oWorkBookWriteMember
-        # oWorkBookWriteMember.save(str(oPostParameters['cMemberDistributionFilePath']))
+        oWorkBookWriteMember.save(str(oPostParameters['cMemberDistributionFilePath']))
         
 
         FunDCT_PreparedUploadedStat(oPostParameters)
@@ -1674,8 +1698,8 @@ def FunDCT_NOT_ACCEPTED(cGetDependentColumnVal, oCellVal,colName):
 
 def FunDCT_GetDependentColumnValue(oSheetUploaded, cCoordinate, jColumn):
     try:
-        oCell = oSheetUploaded[str(cCoordinate) + str(jColumn)]
-        return oCell.value
+        oCell = oSheetUploaded.iat[int(cCoordinate),int(jColumn)]
+        return str(oCell)
     except Exception as e:
         LogService.log('Error :FunDCT_GetDependentColumnValue Error while parsing file due to ' + str(e))
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_GetDependentColumnValue Error while parsing file due to ' + str(e))
@@ -1693,7 +1717,7 @@ def FunDCT_DependentData(oPostParameters):
                 if iIndexDependentValidator <= 1:
                     aExplRange = aPrimaryValidators[0].split('DEPENDENT(')[1]
                     cGetDependentColumnVal = FunDCT_GetDependentColumnValue(
-                        oPostParameters['oSheetUploaded'], aExplRange, oPostParameters['iRow'])
+                        oPostParameters['oSheetUploaded'],  oPostParameters['iRow'],aExplRange)
 
                     if len(aPrimaryValidators) >= 3:
                         if aPrimaryValidators[1].startswith('MIXED_DATA(DEFAULT_'):
@@ -1803,7 +1827,7 @@ def FunDCT_NoChange(oPostParameters, aSavedSearchedRow, oSheetTemplateUniqueSeq)
     try:
        ## code for checking if cKeyUniqueID is None or it is present in aSavedSearchedRow added by spirgonde
         bMatch = True
-        cKeyUniqueID = oPostParameters['oSheetUploaded'].cell(row=oPostParameters['iRow'], column=oPostParameters['cKeyUniqueIDSequence']).value
+        cKeyUniqueID = str(oPostParameters['oSheetUploaded'].iat[int(oPostParameters['iRow'])-1, int(oPostParameters['cKeyUniqueIDSequence'])-1])
         # print(f'{MemoryService.getMemoryUsedStr()}- No change validaiton fetibg uploaded sheet')
         if(cKeyUniqueID is None):
             bMatch = False
@@ -1898,7 +1922,7 @@ def FunDCT_CheckedRateIncreaseValidations(oPostParameters, aSavedSearchedRow, oS
 def FunDCT_ValidateRateIncrease(oPostParameters, aSavedSearchedRow, oSheetTemplateUniqueSeq):
     try:
         bMatch = False
-        cKeyUniqueID = oPostParameters['oSheetUploaded'].cell(row=oPostParameters['iRow'], column=oPostParameters['cKeyUniqueIDSequence']).value
+        cKeyUniqueID = str(oPostParameters['oSheetUploaded'].iat[int(oPostParameters['iRow'])-1,int(oPostParameters['cKeyUniqueIDSequence'])-1])
         if type(cKeyUniqueID) == str : cKeyUniqueID = int(cKeyUniqueID)
         # iFindRow = int(aSavedSearchedRow[str(cKeyUniqueID)])
         iFindRow = int(aSavedSearchedRow[cKeyUniqueID])
@@ -1949,7 +1973,7 @@ def FunDCT_ValidateDuplicate(oPostParameters):
         bMatch = False
         cColumnIndex = FunDCT_GetColumnIndexFromCoordinate(oPostParameters['cDependentCol'])
         if cColumnIndex != '':
-            cCellValOrg = oPostParameters['oSheetUploaded'].cell(row=oPostParameters['iRow'], column=cColumnIndex).value
+            cCellValOrg = str(oPostParameters['oSheetUploaded'].iat[int(oPostParameters['iRow'])-1, int(cColumnIndex)-1])
             if str(cCellValOrg) != str(oPostParameters['oCellVal']):
                 bMatch = True
             else:

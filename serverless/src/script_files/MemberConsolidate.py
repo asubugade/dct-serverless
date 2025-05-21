@@ -36,6 +36,8 @@ from pyconfig import loadConfig
 from pyconfig.model_common import model_common_Cls
 from pyconfig import awsCloudFileManager
 
+from bson import ObjectId
+
 from shutil import copyfile
 import glob
 import pandas.api.types as pdt
@@ -48,7 +50,7 @@ sys.path.insert(0, os.path.abspath(__file__))
 oPostParameters = json.loads(sys.argv[1])
 # with open(r'c:\vartemp\tempmembercosolidate.txt','w') as f:
 #     f.write(str(sys.argv[1]))
-# with open(r'c:\vartemp\tempmembercosolidateMmind.txt','r') as f:
+# with open(r'c:\vartemp\tempmembercosolidate.txt','r') as f:
 #     oPostParameters = json.loads(f.read())
 model_common = model_common_Cls()
 MessageHandling = MessageHandling()
@@ -176,11 +178,77 @@ def FunDCT_MemberAllFile():
             if os.path.exists(cSamplfilepath):
                     os.remove(cSamplfilepath)
                 
+            oStatusDetails = model_common.statusActive[0]
+            iStatusID = oStatusDetails.get('_id')
+            pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+            existing_data = model_common.FunDCT_GetPendingMemberSubmissionData(iStatusID,pending_consl_req_id)
+            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+            IsConsolidationRequested = {
+                "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
+            aRequestDetails = {
+                "cTemplateStatusFile": cS3UrlUploadedOrg,
+                "IsConsolidationRequested": IsConsolidationRequested,
+                "bProcesslock": "N",
+                "bProcessed": "Y",
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
+            }
+            model_common.FunDCT_UpdateMemberSubmissionData(iStatusID,pending_consl_req_id,aRequestDetails)
+
+            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(oPostParameters['iTemplateID'])
+            model_common.FunDCT_SendMemberSubmissionFile(cS3UrlUploadedOrg, oTemplateDetails, oPostParameters)
+            
             return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
         else:
+            oStatusDetails = model_common.statusActive[0]
+            iStatusID = oStatusDetails.get('_id')
+            pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+            existing_data = model_common.FunDCT_GetPendingMemberSubmissionData(iStatusID,pending_consl_req_id)
+            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+            IsConsolidationRequested = {
+                "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
+            aRequestDetails = {
+                "IsConsolidationRequested": IsConsolidationRequested,
+			    "bExceptionfound": 'Y',
+                "bProcesslock": "N",
+                "bProcessed": "F",
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
+            }
+            model_common.FunDCT_UpdateMemberSubmissionData(iStatusID,pending_consl_req_id,aRequestDetails)
+
             return MessageHandling.FunDCT_MessageHandling('Error', 'No Data')
     
     except Exception as e:
+        oStatusDetails = model_common.statusActive[0]
+        iStatusID = oStatusDetails.get('_id')
+        pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+        existing_data = model_common.FunDCT_GetPendingMemberSubmissionData(iStatusID,pending_consl_req_id)
+        is_consolidation = existing_data.get("IsConsolidationRequested", {})
+        IsConsolidationRequested = {
+            "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+            "iEnteredby": is_consolidation.get("iEnteredby", 0),
+            "iTemplateID": is_consolidation.get("iTemplateID", 0),
+            "IsAlreadyRequested": False
+        }
+        aRequestDetails = {
+            "IsConsolidationRequested": IsConsolidationRequested,
+			"bExceptionfound": 'Y',
+            "bProcesslock": "N",
+            "bProcessed": "F",
+            "tProcessEnd": datetime.utcnow(),
+            "tUpdated": datetime.utcnow()
+        }
+        model_common.FunDCT_UpdateMemberSubmissionData(iStatusID,pending_consl_req_id,aRequestDetails)
+
         trace_back = sys.exc_info()[2]
         line = trace_back.tb_lineno
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_MergeAllTemplateFile Error while parsing file due to ' + str(e) + 'Line no - '+ str(line))

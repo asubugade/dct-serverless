@@ -10,7 +10,6 @@ from pathlib import Path
 import inspect
 import os
 import openpyxl
-from io import BytesIO
 import re
 from pyconfig.LogService import LogService
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -34,21 +33,14 @@ LogService.log(f'pyvalidatate seperatetor ==> {PY_VALIDATION_SEPARATOR}')
 LogService.log(f'PY_RANGE_VALUE_SEPARATOR seperatetor ==> {PY_RANGE_VALUE_SEPARATOR}')
 LogService.log(f'PY_BRACKET_VALIDATION_SEPARATOR seperatetor ==> {PY_BRACKET_VALIDATION_SEPARATOR}')
 path = json.loads(sys.argv[1])
-with open(r'c:\vartemp\createtemp.txt','w') as f:
-    f.write(str(sys.argv[1]))
-# with open(r'c:\vartemp\Distribute_Release.txt','r') as f:
-#     oPostParameters = json.loads(f.read())
-
-
 # with open(r'c:\vartemp\tempvalidateuploadtemplate.txt','w') as f:
 #     f.write(str(sys.argv[1]))
 # with open(r'c:\vartemp\tempvalidateuploadtemplate.txt','r') as f:
 #     path = json.loads(f.read())
 
-
 LogService.log(f'Argument recieved ==> {path}')
 
-cFileContent = path['cFileContent']
+cFilePath = path['cDirFile']
 aValidateRules = path['aValidateRules']
 aValidateRulesAll = path['aValidateRulesAll']
 
@@ -56,11 +48,10 @@ bValidation = True
 iValidatoinRow = 2  # Row in xlsx file in which Validations are present
 
 
-def FunDCT_ValidateRows(content, aValidateRules, aValidateRulesAll):
+def FunDCT_ValidateRows(path, aValidateRules, aValidateRulesAll):
     try:
         LogService.log('Rrow Validator Started ')
-        file_stream = BytesIO(content)
-        oWorkBook = openpyxl.load_workbook(file_stream)
+        oWorkBook = openpyxl.load_workbook(path)
         oSheet = oWorkBook.active
         if oSheet.max_row == 3 or oSheet.max_row ==2:
             bValidation = True
@@ -121,5 +112,5 @@ def FunDCT_CheckMultipleValidations(cColumnValue, aValidateRules, aValidateRules
     return True
 
 
-FunDCT_ValidateRows(cFileContent, aValidateRules,
+FunDCT_ValidateRows(cFilePath, aValidateRules,
                     aValidateRulesAll)

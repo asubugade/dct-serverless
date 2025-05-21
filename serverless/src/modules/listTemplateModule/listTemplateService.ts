@@ -977,7 +977,7 @@ export class ListTemplateService {
 
       const { iTemplateID, cTemplateName, tCuttoffdate, aMemberCutoffs, cEmailTemplateID, cEmailFrom, optionSendMail } = JSON.parse(event.body);
       let oMemberEmailAndScac: any = [];
-      let cAdditionalEmail = '';
+      let cAdditionalEmail :any= '';
       var tNow = new Date(tCuttoffdate);
       const cuttoffdate = moment(tNow).format('YYYY-MM-DD HH:mm:ss');
       const aTmplMetaData = { tCuttoffdate: cuttoffdate }
@@ -1022,7 +1022,7 @@ export class ListTemplateService {
           { $set: aTmplMetaData },
           { new: true }
         ).lean() as ITmplMetaData;
-        cAdditionalEmail = oTemplate['_doc'].cAdditionalEmail;
+        cAdditionalEmail = oTemplate?.cAdditionalEmail;
         const aMemberCutoffList = _.keys(aMemberCutoffs);
         for (const aMemberScac of aMemberCutoffList) {
           const data = `aMemberCutoffs.${aMemberScac}.0.tCuttoffdate`;
@@ -1033,7 +1033,7 @@ export class ListTemplateService {
           ).lean() as ITmplMetaData;
           let oMembersList = await GenMember.findOne({ cScac: aMemberScac }).lean() as IMember;
           if (oMembersList) {
-            let cEmail = oMembersList['_doc'].cEmail;
+            let cEmail = oMembersList?.cEmail;
             const newArray = { cEmail, aMemberScac };
             oMemberEmailAndScac.push(newArray);
             // oMemberEmail.push(aMemberScac, oMembersList['_doc'].cEmail);

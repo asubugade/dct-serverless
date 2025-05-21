@@ -45,9 +45,12 @@ from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 # Explore Parameteres
 aGlobalParameters = defaultdict(dict)
 oPostParameters = json.loads(sys.argv[1])
-# with open(r'c:\vartemp\Distribute_Release.txt','w') as f:
+# with open(r'c:\vartemp\Distribute_Release1111.txt','w') as f:
+# with open(r'c:\vartemp\Member_Upload.txt','w') as f:
 #     f.write(str(sys.argv[1]))
-# with open(r'c:\vartemp\Distribute_Release.txt','r') as f:
+# with open(r'c:\vartemp\Distribute_Release33.txt','w') as f:
+#     f.write(str(sys.argv[1]))    
+# with open(r'c:\vartemp\Distribute_Release33.txt','r') as f:
 #     oPostParameters = json.loads(f.read())    
 # with open(r'c:\vartemp\Member_Upload.txt','r') as f:
 #     oPostParameters = json.loads(f.read())
@@ -82,9 +85,9 @@ cSampleFileType = oPostParameters['cSampleFileType']
 cSampleFullFilePath = cSampleTemplateFileDir + cSampleTemplateFile + cSampleFileType
 
 cDirValidateTemplateHeaderLevel = oPostParameters['cDirValidateTemplateHeaderLevel']
-_cValidateTemplateFileJSON = oPostParameters['_cValidateTemplateFileJSON']
+# _cValidateTemplateFileJSON = oPostParameters['_cValidateTemplateFileJSON']
 
-_cTemplateCommentsFileJSON = oPostParameters['_cTemplateCommentsFileJSON']
+# _cTemplateCommentsFileJSON = oPostParameters['_cTemplateCommentsFileJSON']
 
 cDirValidateTemplateStatusFile = oPostParameters['cDirValidateTemplateStatusFile']
 _cValidateTmplateStatusFile = oPostParameters['_cValidateTmplateStatusFile']
@@ -93,15 +96,18 @@ oPostParameters['cStatusFileFullFilePath'] = cStatusFileFullFilePath
 succussFilePath = cDirValidateTemplateStatusFile + 'SuccessFile' + _cValidateTmplateStatusFile
 
 _cValidatedExcelToJSONSuccessFile = oPostParameters['_cValidatedExcelToJSONSuccessFile']
-with open(cDirValidateTemplateHeaderLevel + _cValidateTemplateFileJSON, "r") as oValidationsDetails:
-    oValidationsDetails = json.load(oValidationsDetails)
-# if iTemplateID:
-#     oValidationsDetails = model_common.FunDCT_GET_HEADER_VALIDATION(iTemplateID)
+# with open(cDirValidateTemplateHeaderLevel + _cValidateTemplateFileJSON, "r") as oValidationsDetails:
+    # oValidationsDetails = json.load(oValidationsDetails)
+model_common = model_common_Cls()
+MessageHandling = MessageHandling()
+
+if iTemplateID:
+    oValidationsDetails = model_common.FunDCT_GET_HEADER_VALIDATIONonlyChild(iTemplateID)
     
 
 
-with open(cDirValidateTemplateHeaderLevel + _cTemplateCommentsFileJSON, "r") as oCommentsDetails:
-    oCommentsDetails = json.load(oCommentsDetails)
+# with open(cDirValidateTemplateHeaderLevel + _cTemplateCommentsFileJSON, "r") as oCommentsDetails:
+#     oCommentsDetails = json.load(oCommentsDetails)
 
 aValidateHeader = defaultdict(dict)
 aValidateContent = defaultdict(dict)
@@ -111,8 +117,6 @@ cValidatePattern = ''
 cKey = ''
 cNewkeytype = ''
 cNewval = ''
-model_common = model_common_Cls()
-MessageHandling = MessageHandling()
 cSampleFile = Path(cSampleFullFilePath)
 LogService.log(f'cSampleFile =={cSampleFile}')
 LogService.log(f'cSampleFile.is_file() =={cSampleFile.is_file()}')
@@ -150,10 +154,10 @@ if _cUploadType != 'DISTRIBUTE' and str(oPostParameters['preFillData']).strip().
         Path(cDirDistribution+str(iTemplateID)).mkdir(exist_ok=True)
         cDistributeFileToCompare =  str(cDirDistribution) + str(iTemplateID) + '/' + str(iTemplateID) + '.xlsx'
         bDistributeFileToCompare = Path(cDistributeFileToCompare)
-        # if not bDistributeFileToCompare.is_file():
-        oDataFrameDistributed = model_common.FunDCT_GetDistributionData(iTemplateID)
+        if not bDistributeFileToCompare.is_file():
+            oDataFrameDistributed = model_common.FunDCT_GetDistributionData(iTemplateID)
             # cReplacedNull = oDataFrameDistributed[0]['aDistributedData'].replace('null', "'#DCT#'")
-        awsCloudFileManager.download_file_from_bucket(loadConfig.AWS_BUCKET,oDataFrameDistributed[0]['aDistributedData'],cDistributeFileToCompare)
+            awsCloudFileManager.download_file_from_bucket(loadConfig.AWS_BUCKET,oDataFrameDistributed[0]['aDistributedData'],cDistributeFileToCompare)
         # bytesData = awsCloudFileManager.getfile(loadConfig.AWS_BUCKET,oDataFrameDistributed[0]['aDistributedData'])
         # oDataFrameDistributedData = pandas.read_excel(bytesData,na_values = "Missing", na_filter=True, skiprows = iMaxDepthHeaders - 1,engine='openpyxl')
         # oDataFrameDistributedData.columns = oDataFrameDistributedData.columns.str.replace('#DCT#.*', '')
@@ -164,8 +168,50 @@ if _cUploadType != 'DISTRIBUTE' and str(oPostParameters['preFillData']).strip().
         LogService.log(f"ERRRRRRRRRRRR - {str(e)} Line no - + {str(line)}")
         exit
 
+def convert_excel_date_format_to_python(excel_format):
+    """
+    Convert basic Excel date format to Python's datetime format.
+    """
+    format_map = {
+        'yyyy': '%Y',
+        'yy': '%y',
+        'mmmm': '%B',     # Full month name
+        'mmm': '%b',      # Abbreviated month name
+        'mm': '%m',       # Month as 01-12
+        'm': '%-m',       # Month as 1-12 (platform-dependent)
+        'dddd': '%A',     # Full weekday name
+        'ddd': '%a',      # Abbreviated weekday name
+        'dd': '%d',
+        'd': '%d',
+        # 'hh': '%H',
+        # 'h': '%H',
+        # 'mm': '%M',       # Minute (context conflict with month)
+        # 'ss': '%S',
+        # 'AM/PM': '%p'
+    }
 
+    # To avoid conflict (like 'mm' meaning both month and minute), we handle manually:
+    import re
 
+    # Custom parsing of tokens
+    tokens = re.findall(r'(yyyy|yy|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|AM/PM)', excel_format, flags=re.IGNORECASE)
+    python_format = excel_format
+
+    for token in set(tokens):
+        python_format = python_format.replace(token, format_map.get(token.lower(), token))
+
+    return python_format
+def trydateparser(value,format='%Y-%m-%d'):
+    try:
+            parseddate = datetime.strftime(value,format)
+            return parseddate
+    except (ValueError, TypeError):
+        return value  # Not a date, return original
+def percentageFormater(value):
+        try:
+            return f"{round(float(value) * 100, 2)}%"
+        except:
+            return value
 if str(oPostParameters['preFillData']).strip().lower() == 'yes'.lower():
     # Initiating Workbooks
     oWorkbookTemplate = load_workbook(cSampleFullFilePath)
@@ -174,14 +220,53 @@ if str(oPostParameters['preFillData']).strip().lower() == 'yes'.lower():
     iMaxRowTemplate = oSheetTemplate.max_row
     iMaxColumnTemplate = oSheetTemplate.max_column
     oPostParameters['oWorkbookTemplate'] = oWorkbookTemplate
+    oPostParameters['oSheetTemplate'] = oSheetTemplate
+    
 
     # print(f'{MemoryService.getMemoryUsedStr()}- uploaded file membero loadss')
-    # oWorkbookUploaded = pandas.ExcelFile(oPostParameters['cFullFilePath'],'openpyxl').book    
-    oWorkbookUploaded = load_workbook(oPostParameters['cFullFilePath'])
+    oWorkbookUploaded = pandas.ExcelFile(oPostParameters['cFullFilePath'],'openpyxl')
+    oWtem = load_workbook(oPostParameters['cFullFilePath'],read_only=True)
+    sheetCo_RelatedData = defaultdict(dict)
+    for sht in oWorkbookUploaded.sheet_names:
+        if oWtem[sht].sheet_state == 'visible':
+            oSheetUploaded = oWorkbookUploaded.parse(sht, header=None,keep_default_na=False,)
+            oSheetUploaded = oSheetUploaded.drop(columns=[col for col in oSheetUploaded.columns if (oSheetUploaded[col] == '').all()])
+            r,c = oSheetUploaded.shape
+            
+            oTemShet = oWtem[sht]
+            sheetCo_RelatedData['1'] = {}
+            for row in oTemShet.iter_rows(min_row=iMaxDepthHeaders+1,max_row=iMaxDepthHeaders+1):
+                
+                for iCol,cel in enumerate(row,0):
+                    tDict = {
+                    'formula':None,
+                    'number_format':None,
+                    'data_type':''
+                }
+                    tDict['data_type'] = cel.data_type
+                    tDict['number_format'] =cel.number_format
+                    if cel.data_type == 'f':
+                        tDict['formula'] = cel.internal_value
+                    if cel.data_type == 'd':
+                        dateFormat = convert_excel_date_format_to_python(cel.number_format)
+                        oSheetUploaded[iCol] = oSheetUploaded[iCol].apply(trydateparser,format=dateFormat)
+                    if '%' in str(cel.value):
+                        oSheetUploaded[iCol] = oSheetUploaded[iCol].apply(percentageFormater)
+                    sheetCo_RelatedData['1'][str(iCol)] = tDict
+    oPostParameters['sheetCo_RelatedData'] = sheetCo_RelatedData
+                    
+        
+    
+    
+        
+    # oWorkbookUploaded = load_workbook(oPostParameters['cFullFilePath'],data_only=True)
+    
     # print(f'{MemoryService.getMemoryUsedStr()}- uploaded file membero loadss')
-    oSheetUploaded = oWorkbookUploaded.active
-    iMaxRowUploaded = oSheetUploaded.max_row
-    iMaxColumnUploaded = oSheetUploaded.max_column
+    # oSheetUploaded = oWorkbookUploaded.active
+    # iMaxRowUploaded = oSheetUploaded.max_row
+    # iMaxColumnUploaded = oSheetUploaded.max_column
+    iMaxRowUploaded,iMaxColumnUploaded = oSheetUploaded.shape
+    
 
     # Code Adeed by Asif to triming the values for header 
     # for iColx in range(iMaxColumnUploaded):
@@ -235,7 +320,7 @@ aSavedSearchedRow = defaultdict(dict)
 oSheetTemplateUniqueSeq = defaultdict(dict)
 if oPostParameters['_cUploadType'] != 'DISTRIBUTE' and str(oPostParameters['preFillData']).strip().lower() == 'yes'.lower():
     cDistributeFileToCompare =  str(oPostParameters['cDirDistribution']) + str(oPostParameters['iTemplateID']) + '/' + str(oPostParameters['iTemplateID']) + '.xlsx'
-    oWorkbookTemplateUniqueSeq = load_workbook(cDistributeFileToCompare,read_only=True,)
+    oWorkbookTemplateUniqueSeq = load_workbook(cDistributeFileToCompare,read_only=True)
     data = []
     ws = oWorkbookTemplateUniqueSeq.active
     indexID = 0
@@ -246,10 +331,14 @@ if oPostParameters['_cUploadType'] != 'DISTRIBUTE' and str(oPostParameters['preF
     for ii, row in enumerate(ws.iter_rows(values_only=False), start=1):
         formatted_row = []
         for cell in row:
-            if cell.number_format in ['0%', '0.00%']:  # Check if the cell is formatted as a percentage
+            if '%' in cell.number_format :  # Check if the cell is formatted as a percentage
                 formatted_value = f"{round(cell.value * 100, 2)}%"  # Convert 0.3 to '30%'
+            elif cell.data_type == 'd':
+                dateFormat = convert_excel_date_format_to_python(cell.number_format)
+                formatted_value = trydateparser(cell.value,dateFormat)                
             else:
                 formatted_value = cell.value  # Keep the value as-is
+            
             formatted_row.append(formatted_value)
         row = formatted_row
     # ------------------------------------------
@@ -466,6 +555,7 @@ def FunDCT_ValidateHeader(oPostParameters):
             aKeys = aUnMappedColumnLabels[_cCompanyname]['_cCompanyname'][0].keys()
         
         iIndex = 0
+        
         for iRow in range(1, iMaxRowTemplate+1):
             iSubsctractCols = 0
             for jColumn in range(1, iMaxColumnTemplate+1):
@@ -493,13 +583,15 @@ def FunDCT_ValidateHeader(oPostParameters):
 
                 if oSampleCellVal is not None:
                     iBackwardCol = int(jColumn) - int(iSubsctractCols)
-                    oUploadedCell = oSheetUploaded.cell(row=iRow, column=iBackwardCol)
-                    oUploadedCellVal = str(oUploadedCell.value)
+                    # oUploadedCell = oSheetUploaded.cell(row=iRow, column=iBackwardCol)
+                    cRef = f"{get_column_letter(iBackwardCol)}{iRow}"
+                    oUploadedCellVal = oSheetUploaded.iat[iRow-1,iBackwardCol-1]
+                    # oUploadedCellVal = str(oUploadedCell.value)
                     bMatchHeaderValue = True if str(oSampleCellVal).strip() == str(oUploadedCellVal) else False
 
                     if not bMatchHeaderValue:
                         cErrorMessage = MessageHandling.FunDCT_GetValidationDescription('UPLOAD_TEMPLATE','TEMPLATE_VALIDATE_HEADER_MISMATCH').replace('#$DCTVARIABLE_CORRECT_CELL_VAL#$', str(oSampleCellVal)).replace('#$DCTVARIABLE_INCORRECT_CELL_VAL#$', str(oUploadedCellVal) )
-                        FunDCT_PrepareTemplateStatusFile(iIndex, oUploadedCell.row, oUploadedCell.column, str(oUploadedCell.coordinate), cErrorMessage)
+                        FunDCT_PrepareTemplateStatusFile(iIndex, iRow, iBackwardCol, str(cRef), cErrorMessage)
                         iIndex += 1
                     else:                       
                         oSheetStatusFile.cell(iRow, iBackwardCol).value = oSampleCell.value
@@ -813,13 +905,23 @@ def FunDCT_ValidateContent(oPostParameters):
         aMemberScacColIndex = []
         aMemberScacColLabel = defaultdict(dict)
         mappingSCAC =  CommonValidations.getSCAC_columnMapping(oPostParameters['oValidationsDetails'])
+        oPostParameters['mappingSCAC'] = mappingSCAC
+        oPostParameters['lScac'] = []
+        if mappingSCAC.get('DEFAULT_ORIGIN_SCAC'):oPostParameters['lScac'].append(mappingSCAC.get('DEFAULT_ORIGIN_SCAC'))
+        if mappingSCAC.get('DEFAULT_OCEAN_SCAC'):oPostParameters['lScac'].append(mappingSCAC.get('DEFAULT_OCEAN_SCAC'))
+        if mappingSCAC.get('DEFAULT_DESTINATION_SCAC'):oPostParameters['lScac'].append(mappingSCAC.get('DEFAULT_DESTINATION_SCAC'))
+        
+        
         for cMemberColumnKey, aMemberColumnDetails in enumerate(aGetMemberColumns):
             # if aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'] == 'SERVICE INFO':
             if aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'] == 'SERVICE INFO':
                 continue
-            iColumnIndex = CommonValidations.FunDCT_GetColumnIndex(oPostParameters['oSheetUploaded'], aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
+            s = oSheetUploaded.loc[iMaxDepthHeaders-1].values
+            iColumnIndex = list(oSheetUploaded.loc[iMaxDepthHeaders-1].values).index(aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
+            # iColumnIndex = CommonValidations.FunDCT_GetColumnIndex(oPostParameters['oSheetUploaded'], aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel'])
             aMemberScacColIndex.append(iColumnIndex)
             aMemberScacColLabel[iColumnIndex]['cHeaderLabel'] = str(aGetMemberColumns[cMemberColumnKey]['aTemplateHeader']['cHeaderLabel']).strip()
+        # for iRow, row in enumerate(oSheetUploaded,1):
         for iRow in range(1, iMaxRowUploaded+1):
             if iRow <= iMaxDepthHeaders:
                 continue
@@ -827,25 +929,27 @@ def FunDCT_ValidateContent(oPostParameters):
             oPostParameters['NS'] = False
             tRowList = []
             bRowAdd = False
-            for ix, eachCell in enumerate(oSheetUploaded[f'A{iRow}:{get_column_letter(iMaxColumnUploaded)}{iRow}']):
-                for eachCll in eachCell:
-                    if str(eachCll.value).strip().lower() == 'ns':
-                        oPostParameters['NS'] = True
-                        break
-             
+            # for ix, eachCell in enumerate(oSheetUploaded[f'A{iRow}:{get_column_letter(iMaxColumnUploaded)}{iRow}']):
+            #     for eachCll in eachCell:
+            #         if str(eachCll.value).strip().lower() == 'ns':
+            #             oPostParameters['NS'] = True
+            #             break
+            if 'ns' in oSheetUploaded.loc[iRow-1].values :
+                oPostParameters['NS'] = True
             iMergedCellLen = 0
             for jColumn in range(1, iMaxColumnUploaded+1):
-                oCell = oSheetUploaded.cell(row=iRow, column=jColumn)
-                if oCell.number_format in ['0%', '0.00%']:
-                    oCell.value = f"{round(oCell.value * 100, 2)}%"  # Convert 0.3 to '30%'
-                oPostParameters['oCellVal'] = oCell.value
-                cCellVal = oCell.value
-                cStartRange = oCell.coordinate
+            # for jColumn,oCell in enumerate(row ,1):
+                oCell = oSheetUploaded.iat[iRow-1,jColumn-1]
+                # if oCell.number_format in ['0%', '0.00%']:
+                #     oCell.value = f"{round(oCell.value * 100, 2)}%"  # Convert 0.3 to '30%'
+                oPostParameters['oCellVal'] = str(oCell)
+                cCellVal = str(oCell)
+                # cStartRange = oCell.coordinate
                 bValidContent = False
                 
                 if len(aKeys) > 0:
                     
-                    bColumnHeaderNotInRange = True if str(oPostParameters['oCellVal']) in aKeys else False
+                    # bColumnHeaderNotInRange = True if str(oPostParameters['oCellVal']) in aKeys else False
                     bInUnmappedRange = any(iLowerRange <= jColumn <= iUpperRange for (iLowerRange, iUpperRange) in aUnMappedColumnRangeList)
                     binMappedRange  = any(iLowerRange <= jColumn <= iUpperRange for (iLowerRange, iUpperRange) in aMappedColumnRangeList)
                     if bInUnmappedRange == True:
@@ -889,9 +993,9 @@ def FunDCT_ValidateContent(oPostParameters):
                 oPostParameters['iForwardValidator'] = int(int(jColumn-1) + int(iSubsctractCols))
                 oPostParameters['iBackwardValidator'] = int(jColumn-1)
 
-                oUploadedCell = oSheetUploaded.cell(row=iRow, column=jColumn)
-                oPostParameters['cBackColorUploadedCell'] = FunDCT_GetBackGroundColor(oUploadedCell)
-                oPostParameters['cTextColorUploadedCell'] = FunDCT_GetFontColor(oUploadedCell)
+                # oUploadedCell = oSheetUploaded.cell(row=iRow, column=jColumn)
+                # oPostParameters['cBackColorUploadedCell'] = FunDCT_GetBackGroundColor(oCell)
+                # oPostParameters['cTextColorUploadedCell'] = FunDCT_GetFontColor(oCell)
 
                 oPostParameters['iRow'] = iRow
                 oPostParameters['iCol'] = jColumn
@@ -915,7 +1019,7 @@ def FunDCT_ValidateContent(oPostParameters):
                     try:
                         if mappingSCAC.get(sSCACname):
                             scacint = int(mappingSCAC.get(sSCACname))
-                            liablitySCAC = oSheetUploaded.cell(row=iRow, column=scacint+1).value
+                            liablitySCAC = str(oSheetUploaded.iat[iRow-1, scacint])
                             bLiable = liablitySCAC ==_cCompanyname
 
                     except:
@@ -957,9 +1061,9 @@ def FunDCT_ValidateContent(oPostParameters):
                 else:
                     cCellValUpdated = cCellVal.strip()
                     
-                    if oPostParameters['_cUploadType'] == 'DISTRIBUTE':
-                        if 'NO_CHANGE' not in oPostParameters['cValidationValObj']:
-                            cCellValUpdated = ""
+                    # if oPostParameters['_cUploadType'] == 'DISTRIBUTE':
+                        # if 'NO_CHANGE' not in oPostParameters['cValidationValObj']:
+                        #     cCellValUpdated = ""
                     if cCellValUpdated.lower() == 'none':
                         cCellValUpdated = ''
                     
@@ -1074,6 +1178,7 @@ def FunDCT_ValidateTemplate(oPostParameters):
             
             LogService.log('Validate Content Started')
             # Validate Content
+
             FunDCT_ValidateContent(oPostParameters)
             LogService.log('Validate Content Ended')
             # print('aValidateContent',aValidateContent)
@@ -1081,6 +1186,7 @@ def FunDCT_ValidateTemplate(oPostParameters):
             
             oWorkbookStatusFile.save(oPostParameters['cStatusFileFullFilePath'])
             oWorkbookSuccessFile.save(succussFilePath)
+            oPostParameters['oSheetUploaded'] = ''
 
            
             # DB Update Log Org/Status
@@ -1143,6 +1249,59 @@ def FunDCT_ValidateTemplate(oPostParameters):
             "iErrorLenth": len(aValidateContent),
             "cDistributionDetails": aSelectedMembers,
         }
+        if oPostParameters["preFillData"] == "yes" or oPostParameters['_cUploadType'] != "DISTRIBUTE":
+            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
+            oTemplateMetaData = model_common.FunDCT_findMetadataByTemplateID(iTemplateID)
+            bExceptionfound = 'Y' if aValidateResponse["iErrorLenth"] > 0 else 'N'
+            
+            if _cUploadType == 'DISTRIBUTE':
+                aTmplUploadLogFields = {
+                    "bExceptionfound": bExceptionfound,
+                    "bProcesslock": "N",
+                    "bProcessed": "Y",
+                    "cTemplateFile": aValidateResponse["cFullPath"],
+                    "cDistributionDetails": aValidateResponse["cDistributionDetails"],
+                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
+                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
+                    "tProcessEnd": datetime.now(),
+                    "tUpdated": datetime.now(),
+                    "iMaxDepthHeaders": iMaxDepthHeaders
+                }
+                oUpdateUploadLog = model_common.FunDCT_UpdateDistributeTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
+            else:
+                aTmplUploadLogFields = {
+                    "bProcesslock": "N",
+                    "bProcessed": "Y",
+                    "cTemplateFile": aValidateResponse["cFullPath"],
+                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
+                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
+                    "tProcessEnd": datetime.utcnow(),
+                    "tUpdated": datetime.utcnow(),
+                }
+                oUpdateUploadLog = model_common.FunDCT_UpdateMemberTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
+
+            if bExceptionfound == 'N':
+                metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
+                aRequestDetail = {"iRedistributedIsUploaded": "0"}
+                oStatData = model_common.FunDCT_findByIDAndUpdateMetadata(metadataID,aRequestDetail)
+                oTemplateDetails[0]["oTemplateMetaDataListing"] = oStatData
+
+                if _cUploadType == 'DISTRIBUTE':
+                    oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+                    oTemplateDetails = model_common.FunDCT_SendDistributionDetails(aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            if _cUploadType == 'MEMBER_UPLOAD' or _cUploadType == 'MEMBER_ADMIN_UPLOAD':
+                oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+                oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            # elif _cUploadType == 'MEMBER_ADMIN_UPLOAD':
+            #     oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+            #     oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            # elif bExceptionfound == 'Y' and _cUploadType != 'DISTRIBUTE':
+            #     metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
+                    
+                
         LogService.log(f'Validation Response == {aValidateResponse}')
         LogService.log(f'Writing to file {cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile}')
         with open(cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile, "w") as oFilePointer:
@@ -1154,6 +1313,13 @@ def FunDCT_ValidateTemplate(oPostParameters):
         return MessageHandling.FunDCT_MessageHandling('Success', _cValidatedExcelToJSONSuccessFile)
     except Exception as e:
         LogService.log('Error FunDCT_ValidateTemplate Error while parsing file due to ' + str(e))
+
+        if _cUploadType == "DISTRIBUTE":
+            oTemplateDetails = model_common.FunDCT_UpdateExceptionTemplateLogsData('tmpl_uploadlogs', oPostParameters)
+
+        if _cUploadType != "DISTRIBUTE":
+            oTemplateDetails = model_common.FunDCT_UpdateExceptionTemplateLogsData('mem_uploadlogs', oPostParameters)
+
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_ValidateTemplate Error while parsing file due to ' + str(e))
 
 

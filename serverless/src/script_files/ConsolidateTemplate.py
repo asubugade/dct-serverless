@@ -42,6 +42,8 @@ import prefillNomemberupload
 from shutil import copyfile
 import glob
 
+from bson import ObjectId
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -766,6 +768,32 @@ def FunDCT_MergeAllTemplateFile():
             cS3DirUploadFile = ''
             cS3DirUploadFile = str(loadConfig.AWS_BUCKET_ENV) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES_CONSOLIDATION) + '/'
             cS3UrlUploadedOrg = awsCloudFileManager.upload_file_to_bucket(str(loadConfig.AWS_BUCKET), str(cS3DirUploadFile), cConsolidateTemplateFileName)
+        
+            oStatusDetails = model_common.statusActive[0]
+            iStatusID = oStatusDetails.get('_id')
+            pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+            existing_data = model_common.FunDCT_GetPendingConsolidationData(iStatusID,pending_consl_req_id)
+            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+
+            IsConsolidationRequested = {
+                "cRequestType": is_consolidation.get("cRequestType", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
+            aRequestDetails = {
+                "cTemplateStatusFile": cS3UrlUploadedOrg,
+                "IsConsolidationRequested": IsConsolidationRequested,
+                "bProcesslock": "N",
+                "bProcessed": "Y",
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
+            }
+
+            model_common.FunDCT_UpdateConsolidationData(iStatusID,pending_consl_req_id,aRequestDetails)
+
+            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
+            model_common.FunDCT_SendConsolidateFile(cS3UrlUploadedOrg, oTemplateDetails, oPostParameters)
 
             return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
         else:
@@ -775,6 +803,28 @@ def FunDCT_MergeAllTemplateFile():
             prefillNomemberupload.PreFilledDataConsolidation(oPostParameters)
 
     except Exception as e:
+        
+        oStatusDetails = model_common.statusActive[0]
+        iStatusID = oStatusDetails.get('_id')
+        pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+        existing_data = model_common.FunDCT_GetPendingConsolidationData(iStatusID,pending_consl_req_id)
+        is_consolidation = existing_data.get("IsConsolidationRequested", {})
+        IsConsolidationRequested = {
+            "cRequestType": is_consolidation.get("cRequestType", ""),
+            "iEnteredby": is_consolidation.get("iEnteredby", 0),
+            "iTemplateID": is_consolidation.get("iTemplateID", 0),
+            "IsAlreadyRequested": False
+        }
+        aRequestDetails = {
+            "IsConsolidationRequested": IsConsolidationRequested,
+			"bExceptionfound": 'Y',
+            "bProcesslock": "N",
+            "bProcessed": "F",
+            "tProcessEnd": datetime.utcnow(),
+            "tUpdated": datetime.utcnow()
+        }
+        model_common.FunDCT_UpdateConsolidationData(iStatusID,pending_consl_req_id,aRequestDetails)
+        
         trace_back = sys.exc_info()[2]
         line = trace_back.tb_lineno
         LogService.log('Error : FunDCT_MergeAllTemplateFile Error while parsing file due to ' + str(e) + 'Line no - '+ str(line))

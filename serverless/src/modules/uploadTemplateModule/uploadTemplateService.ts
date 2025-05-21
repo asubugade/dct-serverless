@@ -135,8 +135,8 @@ export class UploadTemplateService {
 
                 let aMemberScac = body.aMemberScac;
                 let oTemplateMeta = await TmplMetaData.findOne({ _id: body.iTemplateMetaDataID }).lean() as ITmplMetaData;
-                let oTemplate = await Template.findOne({ _id: oTemplateMeta['_doc'].iTemplateID }).lean() as any;
-                let cTemplateName = oTemplate['_doc'].cTemplateName;
+                let oTemplate = await Template.findOne({ _id: oTemplateMeta?.iTemplateID }).lean() as any;
+                let cTemplateName = oTemplate?.cTemplateName;
                 let tCuttoffdate = body.tUpdatedCuttoffDate;
                 var tNow = new Date(tCuttoffdate);
                 const tCutoffConverted: string = moment(tNow).format('YYYY-MM-DD HH:mm:ss');//changed hh to HH by spirgonde
@@ -144,7 +144,7 @@ export class UploadTemplateService {
                 let data = "aMemberCutoffs." + aMemberScac + ".0.tCuttoffdate";
                 let oMembersList = await GenMember.findOne({ cScac: aMemberScac }).lean() as IMember;
                 if (oMembersList) {
-                    oMemberEmail = oMembersList['_doc'].cEmail;
+                    oMemberEmail = oMembersList?.cEmail;
                 }
                 oStatData = await TmplMetaData.findByIdAndUpdate(body.iTemplateMetaDataID,
                     { $set: { [data]: tUpdatedCuttoffDate } },

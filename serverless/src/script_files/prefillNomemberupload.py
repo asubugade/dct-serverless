@@ -9,6 +9,8 @@ sys.path.append(file_dir)
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
+    
+from bson import ObjectId
 
 from script_files.pyconfig.LogService import LogService
 from pyconfig.model_common import model_common_Cls
@@ -130,6 +132,32 @@ def PreFilledDataConsolidation(oPostParameters):
     
     cS3DirUploadFile = str(loadConfig.AWS_BUCKET) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES_CONSOLIDATION) + '/'
     cS3UrlUploadedOrg = awsCloudFileManager.upload_file_to_bucket(loadConfig.AWS_BUCKET,str(cS3DirUploadFile),fFile)
+
+    oStatusDetails = model_common.statusActive[0]
+    iStatusID = oStatusDetails.get('_id')
+    pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
+    existing_data = model_common.FunDCT_GetPendingConsolidationData(iStatusID,pending_consl_req_id)
+    is_consolidation = existing_data.get("IsConsolidationRequested", {})
+
+    IsConsolidationRequested = {
+        "cRequestType": is_consolidation.get("cRequestType", ""),
+        "iEnteredby": is_consolidation.get("iEnteredby", 0),
+        "iTemplateID": is_consolidation.get("iTemplateID", 0),
+        "IsAlreadyRequested": False
+    }
+    aRequestDetails = {
+        "cTemplateStatusFile": cS3UrlUploadedOrg,
+        "IsConsolidationRequested": IsConsolidationRequested,
+        "bProcesslock": "N",
+        "bProcessed": "Y",
+        "tProcessEnd": datetime.utcnow(),
+        "tUpdated": datetime.utcnow()
+    }
+
+    model_common.FunDCT_UpdateConsolidationData(iStatusID,pending_consl_req_id,aRequestDetails)
+
+    oTemplateDetails = model_common.FunDCT_GetTemplateDetails(oPostParameters['iTemplateID'])
+    model_common.FunDCT_SendConsolidateFile(cS3UrlUploadedOrg, oTemplateDetails, oPostParameters)
     return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
 
     
