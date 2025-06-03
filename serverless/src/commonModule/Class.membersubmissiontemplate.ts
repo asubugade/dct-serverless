@@ -38,13 +38,13 @@ import GenTemplateType, { ITemplateType } from "../models/GenTemplateType";
 const BufferReader = require('buffer-reader');
 
 export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
-    
+
     public _cConsolidateFileName: string;
     public _oEmailTemplateCls = new ClsDCT_EmailTemplate();
     private _oCommonCls = new ClsDCT_Common();//added by spirgonde for Autogenerate Consolidation report on template expired
 
     public _oGetTemplateMetaDataDetails: any;
-    
+
     /**
      * Constructor
      */
@@ -55,7 +55,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
     /**
      * To get iTemplateID
      */
-     public FunDCT_GetTemplateID() {
+    public FunDCT_GetTemplateID() {
         return this.iTemplateID;
     }
 
@@ -71,10 +71,10 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
      * To Check pending Consolidation Request
      * @returns array
      */
-     public async FunDCT_GetPendingMemberSubmissionRequest() {
+    public async FunDCT_GetPendingMemberSubmissionRequest() {
         try {
             this.FunDCT_setUserID('0001')
-            this.FunDCT_ApiRequest({baseUrl:'/API/MEMBER_SUBMISSION_REQUEST/'})
+            this.FunDCT_ApiRequest({ baseUrl: '/API/MEMBER_SUBMISSION_REQUEST/' })
             let oStatus: IStatus = await Status.findOne({ cStatusCode: 'ACTIVE' });
             if (!oStatus) {
                 return [];
@@ -86,10 +86,10 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
             //     }
             //     return oPendingConslReq.length;
             // });
-            let oPendingConslReq = await MemberSubmissionDownloadLog.find({iStatusID: iStatusID, bProcesslock: 'Y'});
-           
+            let oPendingConslReq = await MemberSubmissionDownloadLog.find({ iStatusID: iStatusID, bProcesslock: 'Y' });
+
             let iInProgressFile = oPendingConslReq.length
-            if(iInProgressFile <= 0) {
+            if (iInProgressFile <= 0) {
                 const oPendingConslReq: IMemberSubmissionDownloadLog = await MemberSubmissionDownloadLog.findOne({ iStatusID: iStatusID, bProcesslock: 'N', bProcessed: 'N' });
                 if (oPendingConslReq) {
                     const aRequestDetails = { bProcesslock: 'Y', tProcessStart: new Date(), tUpdated: new Date() };
@@ -112,10 +112,10 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
         }
     }
 
-    public async FunDCT_MemberSubmissionTemplate(){
-        try{
+    public async FunDCT_MemberSubmissionTemplate() {
+        try {
             this.FunDCT_setUserID('0001')
-            this.FunDCT_ApiRequest({baseUrl:'/API/MEMBER_SUBMISSSION_TEMPLATE_DOWNLOAD_REQUEST/'})
+            this.FunDCT_ApiRequest({ baseUrl: '/API/MEMBER_SUBMISSSION_TEMPLATE_DOWNLOAD_REQUEST/' })
             const oPendingConslReq: any = await this.FunDCT_GetPendingMemberSubmissionRequest();
             if (typeof oPendingConslReq === 'undefined' || oPendingConslReq == false) {
                 return "Member Submission Files In Progress or No Pending Files";
@@ -127,13 +127,13 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
             this._oGetTemplateMetaDataDetails = await TmplMetaData.find({ "iTemplateID": this.iTemplateID });
             let oTemplate: ITemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(this.iTemplateID) });
             let cTemplateType = oTemplate.cTemplateType;
-            let oTemplateType: ITemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType});
+            let oTemplateType: ITemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType });
             const oParams = {
-                'cDirFile': this.cDirConsolidationTemplate, 'iTemplateID': this.iTemplateID, 'SCAC':  oPendingConslReq['_doc'].aMemberScacCode,
-                'cUserID':userID?userID:'0001',
-                'cType':'MemberConsolidate',
+                'cDirFile': this.cDirConsolidationTemplate, 'iTemplateID': this.iTemplateID, 'SCAC': oPendingConslReq['_doc'].aMemberScacCode,
+                'cUserID': userID ? userID : '0001',
+                'cType': 'MemberConsolidate',
                 'startHeaderRowIndex': this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
-                'preFillData':oTemplateType.preFillData,
+                'preFillData': oTemplateType.preFillData,
             };
             this._oCommonCls.log(`MemberConsolidate.py == request == > ${JSON.stringify(oParams)}`)
             const cScript = this.cDirPythonPath + 'MemberConsolidate.py';
@@ -158,7 +158,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                 let bufferData = new BufferReader(data)
                 // let __nBytes = bufferData.restAll()
                 let iLength = bufferData.buf.length
-                let arr=[];
+                let arr = [];
                 for (let index = 1; index < iLength; index++) {
                     try {
                         arr.push(bufferData.nextString(index))
@@ -183,13 +183,13 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                 let iStatusID = oStatus._id;
                 let cTemplateStatusFile = oResPyProg.oResponse;
                 let existingData = await MemberSubmissionDownloadLog.findOne({ iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq._id) });
-                const IsConsolidationRequested = { 
+                const IsConsolidationRequested = {
                     aMemberScacCode: existingData.IsConsolidationRequested['aMemberScacCode'],
                     iEnteredby: existingData.IsConsolidationRequested['iEnteredby'],
                     iTemplateID: existingData.IsConsolidationRequested['iTemplateID'],
-                    IsAlreadyRequested: false 
+                    IsAlreadyRequested: false
                 }
-                const aRequestDetails = { cTemplateStatusFile: oResPyProg.oResponse, IsConsolidationRequested:IsConsolidationRequested, bProcesslock: 'N', bProcessed: 'Y', tProcessEnd: new Date(), tUpdated: new Date() };
+                const aRequestDetails = { cTemplateStatusFile: oResPyProg.oResponse, IsConsolidationRequested: IsConsolidationRequested, bProcesslock: 'N', bProcessed: 'Y', tProcessEnd: new Date(), tUpdated: new Date() };
                 await MemberSubmissionDownloadLog.findOneAndUpdate(
                     { iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq._id) },
                     { $set: aRequestDetails },
@@ -209,22 +209,22 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                 return [];
             }
             let iStatusID = oStatus._id;
-            let oPendingConslReq = await MemberSubmissionDownloadLog.find({iStatusID: iStatusID, bProcesslock: 'Y'});
+            let oPendingConslReq = await MemberSubmissionDownloadLog.find({ iStatusID: iStatusID, bProcesslock: 'Y' });
             let existingData = await MemberSubmissionDownloadLog.findOne({ iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq[0]['_id']) });
-            const IsConsolidationRequested = { 
+            const IsConsolidationRequested = {
                 aMemberScacCode: existingData.IsConsolidationRequested['aMemberScacCode'],
                 iEnteredby: existingData.IsConsolidationRequested['iEnteredby'],
                 iTemplateID: existingData.IsConsolidationRequested['iTemplateID'],
-                IsAlreadyRequested: false 
+                IsAlreadyRequested: false
             }
-            const aRequestDetails = { IsConsolidationRequested:IsConsolidationRequested, bProcesslock: 'N', bProcessed: 'F', tProcessEnd: new Date(), tUpdated: new Date() };
+            const aRequestDetails = { IsConsolidationRequested: IsConsolidationRequested, bProcesslock: 'N', bProcessed: 'F', tProcessEnd: new Date(), tUpdated: new Date() };
             this.FunDCT_SetTemplateID(oPendingConslReq[0]['iTemplateID']);
             let data = await MemberSubmissionDownloadLog.findOneAndUpdate(
                 { iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq[0]['_id']) },
                 { $set: aRequestDetails },
                 { new: true }
             );
-            
+
             this._oCommonCls.error(oErr.message);
             // process.exit(1);
         }
@@ -248,7 +248,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
      * 3. If template is already not consolidated by autogenerate consolidation request .(i.e cGenerated == 'No')
      * If all above  conditions are followed then  consolidation request is inserted in  database. 
      */
-     public async FunDCT_AutogenerateConsolidation() {
+    public async FunDCT_AutogenerateConsolidation() {
         let oTmplMetaData = await TmplMetaData.find({});
         for (let i = 0; i < oTmplMetaData.length; i++) {
             if (oTmplMetaData[i]['aMemberCutoffs'] && oTmplMetaData[i]['cConsolidation'] == 'Yes' && oTmplMetaData[i]['cGenerated'] == 'No') {
@@ -260,7 +260,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                         let tCuttoffdateMember = new Date(cutoffdate);
                         let todaysDate = new Date();
                         if (todaysDate > tCuttoffdateMember) {
-                           bConsolidate = true;
+                            bConsolidate = true;
                         }
                     }
                 }
@@ -294,6 +294,88 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
 
     }
     //code added by spirgonde for Autogenerate Consolidation report on template expired end .
+
+
+    public getMemberSubmissionJDump = async (iTemplateTypeID: any, memberSubmissionId: any) => {
+        try {
+            this.FunDCT_setUserID('0001')
+            this.FunDCT_ApiRequest({ baseUrl: '/API/MEMBER_SUBMISSSION_TEMPLATE_DOWNLOAD_REQUEST/' })
+            const oPendingConslReq: any = await this.getPendingMemberSubmissionRequest(memberSubmissionId);
+            if (typeof oPendingConslReq === 'undefined' || oPendingConslReq == false) {
+                return "Member Submission Files In Progress or No Pending Files";
+            }
+            this.FunDCT_SetTemplateID(oPendingConslReq.iTemplateID)
+            this._oCommonCls.FunDCT_SetCurrentUserDetailsByID(oPendingConslReq.iEnteredby);
+            //Add Template Loop
+            let userID = this._oCommonCls.FunDCT_getUserID()
+
+            this._oGetTemplateMetaDataDetails = await TmplMetaData.find({ "iTemplateID": this.iTemplateID });
+            let oTemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(this.iTemplateID) }).lean() as ITemplate;
+            let cTemplateType = oTemplate.cTemplateType;
+            let oTemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType }).lean() as ITemplateType;
+            const oParams = {
+                cDirFile: this.cDirConsolidationTemplate, iTemplateID: this.iTemplateID, SCAC: oPendingConslReq.aMemberScacCode,
+                cUserID: userID ? userID : '0001',
+                cType: 'MemberConsolidate',
+                startHeaderRowIndex: this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
+                preFillData: oTemplateType.preFillData,
+                _iTemplateMemberSubmissionID: oPendingConslReq._id,
+            };
+            const laneSchedule = {
+                iTemplateTypeID: iTemplateTypeID,
+                jDump: oParams
+            }
+            return laneSchedule
+        } catch (oErr) {
+            let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
+            if (!oStatus) {
+                return [];
+            }
+            let iStatusID = oStatus._id;
+            let oPendingConslReq = await MemberSubmissionDownloadLog.find({ iStatusID: iStatusID, bProcesslock: 'Y' });
+            let existingData = await MemberSubmissionDownloadLog.findOne({ iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq[0]['_id']) }).lean() as IMemberSubmissionDownloadLog;
+            const IsConsolidationRequested = {
+                aMemberScacCode: existingData.IsConsolidationRequested['aMemberScacCode'],
+                iEnteredby: existingData.IsConsolidationRequested['iEnteredby'],
+                iTemplateID: existingData.IsConsolidationRequested['iTemplateID'],
+                IsAlreadyRequested: false
+            }
+            const aRequestDetails = { IsConsolidationRequested: IsConsolidationRequested, bProcesslock: 'N', bProcessed: 'F', tProcessEnd: new Date(), tUpdated: new Date() };
+            this.FunDCT_SetTemplateID(oPendingConslReq[0]['iTemplateID']);
+            let data = await MemberSubmissionDownloadLog.findOneAndUpdate(
+                { iStatusID: iStatusID, _id: new mongoose.Types.ObjectId(oPendingConslReq[0]['_id']) },
+                { $set: aRequestDetails },
+                { new: true }
+            );
+
+            this._oCommonCls.error(oErr.message);
+            // process.exit(1);
+        }
+    }
+
+    public getPendingMemberSubmissionRequest = async (_id: any) => {
+        try {
+            this.FunDCT_setUserID('0001');
+            this.FunDCT_ApiRequest({ baseUrl: '/API/MEMBER_SUBMISSION_REQUEST/' });
+            let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
+
+            if (!oStatus) {
+                return [];
+            }
+
+            let iStatusID = oStatus._id;
+            const oPendingConslReq = await MemberSubmissionDownloadLog.findOne({
+                _id: _id,
+                iStatusID: iStatusID,
+                bProcesslock: 'N',
+                bProcessed: 'N'
+            }).lean() as IMemberSubmissionDownloadLog;
+
+            return oPendingConslReq || false;
+        } catch (err: any) {
+            this._oCommonCls.error(err.message);
+        }
+    }
 
 }
 export default new ClsDCT_MemberSubmissionTemplate();

@@ -17,12 +17,13 @@ import User, { IUser } from "../models/GenUser";
 import GenAccessType, { IAccessType } from "../models/GenAccessType";
 import fs, { createWriteStream } from 'fs';
 var mongoose = require('mongoose')
-
+import TmplUploadLog from "../models/Tmpluploadlog";
 import { S3ClientClass } from '../middleware/aws-s3-client';
 import * as path from 'path';
 const oMimeType = require('mime-types');
-import Template, { ITemplate } from "../models/GenTemplate";
-import MemTmplUploadLog, { IMemTmplUploadLog } from "../models/MemTmplUploadLog";
+import Template from "../models/GenTemplate";
+import MemTmplUploadLog from "../models/MemTmplUploadLog";
+import TemplateValidation from "../models/GenTemplateValidation"
 import GenMember, { IMember } from "../models/GenMember";
 import { model } from 'mongoose';
 import { cloudWatchClass } from "../middleware/cloudWatchLogger";
@@ -420,258 +421,264 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
      */
     public async FunDCT_getExportSchema(cType) {
         let aSchemafiltered, Schema;
-        switch (cType) {
+        try {
+            switch (cType) {
 
-            case "USER":
-                Schema = Object.keys(model('gen_users').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'cPassword' && elem !== 'iStatusID' && elem != 'iAccessTypeID' && elem != 'cPwdToken' && elem !== 'cTemplateType' && elem != 'tEntered'
-                    && elem !== 'tUpdated' && elem !== 'passwordHistory'));
-                aSchemafiltered.unshift("cAccessCode");//add element at start of array
-                aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
-                break;
+                case "USER":
+                    Schema = Object.keys(model('gen_users').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'cPassword' && elem !== 'iStatusID' && elem != 'iAccessTypeID' && elem != 'cPwdToken' && elem !== 'cTemplateType' && elem != 'tEntered'
+                        && elem !== 'tUpdated' && elem !== 'passwordHistory'));
+                    aSchemafiltered.unshift("cAccessCode");//add element at start of array
+                    aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
+                    break;
 
-            case "MEMBER_RESTRICTION":
-                Schema = Object.keys(model('tmpl_memberrestrictions').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
-                break;
+                case "MEMBER_RESTRICTION":
+                    Schema = Object.keys(Template.schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
+                    break;
 
-            case "MESSAGE":
-                Schema = Object.keys(model('gen_messages').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
-                break;
+                case "MESSAGE":
+                    Schema = Object.keys(model('gen_messages').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
+                    break;
 
-            case "VALIDATION_RULE":
-                Schema = Object.keys(model('gen_templatevalidations').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem !== 'cTemplateType' && elem != 'tEntered' && elem !== 'tUpdated'));
-                aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
-                break;
+                case "VALIDATION_RULE":
+                    Schema = Object.keys(TemplateValidation.schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem !== 'cTemplateType' && elem != 'tEntered' && elem !== 'tUpdated'));
+                    aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", 'cStatus');
+                    break;
 
-            case "EMAIL_TEMPLATES":
-                Schema = Object.keys(model('gen_emailtemplates').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'cBcc' && elem !== 'cEmailBody' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "EMAIL_TEMPLATES":
+                    Schema = Object.keys(model('gen_emailtemplates').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'cBcc' && elem !== 'cEmailBody' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.unshift("cProcessCode");//add element at start of array    
-                aSchemafiltered.push("cEnteredby", "tEntered", "cUpdatedby", "tUpdated",);
+                    aSchemafiltered.unshift("cProcessCode");//add element at start of array    
+                    aSchemafiltered.push("cEnteredby", "tEntered", "cUpdatedby", "tUpdated",);
 
-                break;
+                    break;
 
-            case "ACCESS_TYPE":
-                Schema = Object.keys(model('gen_accesstypes').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
-                aSchemafiltered.push("cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
-                break;
+                case "ACCESS_TYPE":
+                    Schema = Object.keys(model('gen_accesstypes').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                    aSchemafiltered.push("cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
+                    break;
 
-            case "PERMISSION":
-                Schema = Object.keys(model('gen_permissions').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem !== 'iAccessTypeID' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "PERMISSION":
+                    Schema = Object.keys(model('gen_permissions').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem !== 'iAccessTypeID' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.unshift("cAccessCode", "cProcessCode",);//add element at start of array 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.unshift("cAccessCode", "cProcessCode",);//add element at start of array 
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "MEMBER":
-                Schema = Object.keys(model('gen_members').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem !== 'cTemplateType' && elem != 'tEntered'
-                    && elem !== 'cAlliance' && elem !== 'cCarrierStatus' && elem != 'tUpdated'));
+                case "MEMBER":
+                    Schema = Object.keys(model('gen_members').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem !== 'cTemplateType' && elem != 'tEntered'
+                        && elem !== 'cAlliance' && elem !== 'cCarrierStatus' && elem != 'tUpdated'));
 
-                aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push('cTemplateTypeListing', "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "ADDITIONAL_FIELDS":
-                Schema = Object.keys(model('gen_additionalfields').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "ADDITIONAL_FIELDS":
+                    Schema = Object.keys(model('gen_additionalfields').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "REGION":
-                Schema = Object.keys(model('gen_regions').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "REGION":
+                    Schema = Object.keys(model('gen_regions').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "COUNTRY":
-                Schema = Object.keys(model('gen_countries').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem !== 'iRegionID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'cDefaultcountry'));
+                case "COUNTRY":
+                    Schema = Object.keys(model('gen_countries').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem !== 'iRegionID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'cDefaultcountry'));
 
-                aSchemafiltered.push("cDefaultcountry", "cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
-                break;
+                    aSchemafiltered.push("cDefaultcountry", "cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
+                    break;
 
-            case "LOCATIONS":
-                Schema = Object.keys(model('gen_locations').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "LOCATIONS":
+                    Schema = Object.keys(model('gen_locations').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "PROCESS":
-                Schema = Object.keys(model('gen_processes').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'bConfigurable'));
+                case "PROCESS":
+                    Schema = Object.keys(model('gen_processes').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'bConfigurable'));
 
-                aSchemafiltered.push("cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
-                break;
+                    aSchemafiltered.push("cStatus", "cEnteredby", "tEntered", "cUpdatedby", "tUpdated");
+                    break;
 
-            case "STATUS":
-                Schema = Object.keys(model('gen_Status').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "STATUS":
+                    Schema = Object.keys(model('gen_Status').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
+                    break;
 
-            case "CURRENCY":
-                Schema = Object.keys(model('gen_currencies').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "CURRENCY":
+                    Schema = Object.keys(model('gen_currencies').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "CHARGECODE":
-                Schema = Object.keys(model('gen_chargecodes').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "CHARGECODE":
+                    Schema = Object.keys(model('gen_chargecodes').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "RATE_BASIS":
-                Schema = Object.keys(model('gen_basises').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "RATE_BASIS":
+                    Schema = Object.keys(model('gen_basises').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "CARRIER":
-                Schema = Object.keys(model('gen_carriers').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "CARRIER":
+                    Schema = Object.keys(model('gen_carriers').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "TEMPLATE_TYPE":
-                Schema = Object.keys(model('gen_template_types').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'iEnteredby' && elem !== 'iUpdatedby'));
+                case "TEMPLATE_TYPE":
+                    Schema = Object.keys(model('gen_template_types').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'iEnteredby' && elem !== 'iUpdatedby'));
 
-                aSchemafiltered.push("tEntered", "tUpdated");
-                break;
+                    aSchemafiltered.push("tEntered", "tUpdated");
+                    break;
 
-            case "CUSTOMER":
-                Schema = Object.keys(model('gen_customers').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'cTemplateType'));
+                case "CUSTOMER":
+                    Schema = Object.keys(model('gen_customers').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'cTemplateType'));
 
-                aSchemafiltered.push("cTemplateTypeListing", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.push("cTemplateTypeListing", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "LIST_TEMPLATE":
-                Schema = Object.keys(model('gen_templates').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby'
-                    && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'cUploadedFile' && elem !== 'cTemplateSampleFile'
-                    && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'iTempActiveStatus' && elem !== 'cAddtionalFile'));
+                case "LIST_TEMPLATE":
+                    Schema = Object.keys(model('gen_templates').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby'
+                        && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'cUploadedFile' && elem !== 'cTemplateSampleFile'
+                        && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'iTempActiveStatus' && elem !== 'cAddtionalFile'));
 
-                aSchemafiltered.push("tCuttoffdate", "cStatus", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
-                break;
+                    aSchemafiltered.push("tCuttoffdate", "cStatus", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
+                    break;
 
-            case "MEMBER_TEMPLATE_LIST":
-                Schema = Object.keys(model('gen_templates').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby'
-                    && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'cUploadedFile' && elem !== 'cTemplateSampleFile'
-                    && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'iTempActiveStatus' && elem !== 'cAddtionalFile'));
+                case "MEMBER_TEMPLATE_LIST":
+                    Schema = Object.keys(model('gen_templates').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby'
+                        && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'cUploadedFile' && elem !== 'cTemplateSampleFile'
+                        && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'iTempActiveStatus' && elem !== 'cAddtionalFile'));
 
-                aSchemafiltered.push("tCuttoffdate", "cStatus", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
-                break;
+                    aSchemafiltered.push("tCuttoffdate", "cStatus", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby");
+                    break;
 
-            case "EMAIL_FREQUENCY":
-                Schema = Object.keys(model('tmpl_reminderemailfreqs').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem !== 'iStatusID' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
+                case "EMAIL_FREQUENCY":
+                    Schema = Object.keys(model('tmpl_reminderemailfreqs').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem !== 'iStatusID' && elem !== 'iProcessID' && elem != 'tEntered' && elem !== 'tUpdated'));
 
-                aSchemafiltered.unshift("cProcessCode",);//add element at start of array     
-                aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-                break;
+                    aSchemafiltered.unshift("cProcessCode",);//add element at start of array     
+                    aSchemafiltered.push("tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                    break;
 
-            case "TEMPLATE_UPLOAD_LOG":
-                Schema = Object.keys(model('tmpl_uploadlogs').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iMemberID'
-                    && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile' && elem !== 'cScacCode'
-                    && elem !== 'cSelectedMembers' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cTemplateFile'
-                    && elem !== 'cUploadedFile' && elem !== 'cDistributionDetails' && elem !== 'cTemplateStatusFile'
-                    && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'cAddtionalFile' && elem != 'startHeaderRowIndex'
-                    && elem != 'iMaxDepthHeaders' && elem != 'bProcesslock' && elem != 'bProcessed' && elem != 'isRateExtendMode'
-                    && elem != 'cUploadType' && elem != 'tProcessStart' && elem != 'tProcessEnd' && elem != 'cExceptionDetails'
-                    && elem != 'iActiveStatus'));
+                case "TEMPLATE_UPLOAD_LOG":
+                    Schema = Object.keys(TmplUploadLog.schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iMemberID'
+                        && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile' && elem !== 'cScacCode'
+                        && elem !== 'cSelectedMembers' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cTemplateFile'
+                        && elem !== 'cUploadedFile' && elem !== 'cDistributionDetails' && elem !== 'cTemplateStatusFile'
+                        && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'cAddtionalFile' && elem != 'startHeaderRowIndex'
+                        && elem != 'iMaxDepthHeaders' && elem != 'bProcesslock' && elem != 'bProcessed' && elem != 'isRateExtendMode'
+                        && elem != 'cUploadType' && elem != 'tProcessStart' && elem != 'tProcessEnd' && elem != 'cExceptionDetails'
+                        && elem != 'iActiveStatus'));
 
-                aSchemafiltered.push("cUploadedBy", "tEntered", "tProcessStart", "tProcessEnd");
-                // aSchemafiltered.splice(3,0,"cEnteredby")
-                break;
+                    aSchemafiltered.push("cUploadedBy", "tEntered", "tProcessStart", "tProcessEnd");
+                    // aSchemafiltered.splice(3,0,"cEnteredby")
+                    break;
 
-            // case "MEMBER_UPLOAD_LOG":
-            //     Schema = Object.keys(model('mem_uploadlogs').schema.paths);
-            //     aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iMemberID'
-            //         && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile'
-            //         && elem !== 'cScacCode' && elem !== 'iMemberID' && elem !== 'cTemplateStatusFile' && elem !== 'cAddtionalComment'
-            //         && elem !== 'cUploadedFile' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cUploadStatus'
-            //         && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'cAddtionalFile'));
+                // case "MEMBER_UPLOAD_LOG":
+                //     Schema = Object.keys(model('mem_uploadlogs').schema.paths);
+                //     aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iMemberID'
+                //         && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile'
+                //         && elem !== 'cScacCode' && elem !== 'iMemberID' && elem !== 'cTemplateStatusFile' && elem !== 'cAddtionalComment'
+                //         && elem !== 'cUploadedFile' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cUploadStatus'
+                //         && elem != 'tEntered' && elem !== 'tUpdated' && elem != 'cAddtionalFile'));
 
-            //     aSchemafiltered.push("cAddtionalFile", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
-            //     break;
-            case "MEMBER_UPLOAD_LOG":
-                Schema = Object.keys(model('mem_uploadlogs').schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iMemberID'
-                    && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile'
-                    && elem !== 'cScacCode' && elem !== 'iMemberID' && elem !== 'cTemplateStatusFile'
-                    && elem !== 'cUploadedFile' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cUploadStatus'
-                    && elem !== 'tUpdated' && elem != 'cAddtionalFile' && elem != 'cAddtionalComment' && elem != 'cExceptionDetails'
-                    && elem != 'bProcesslock' && elem != 'bProcessed' && elem != 'isRateExtendMode'
-                    && elem != 'cUploadType' && elem != 'tProcessStart' && elem != 'tProcessEnd' && elem != 'iEnteredby'
-                    && elem != 'tEntered' && elem != 'iActiveStatus'));
+                //     aSchemafiltered.push("cAddtionalFile", "tEntered", "cEnteredby", "tUpdated", "cUpdatedby", "cStatus");
+                //     break;
+                case "MEMBER_UPLOAD_LOG":
+                    Schema = Object.keys(model('mem_uploadlogs').schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iMemberID'
+                        && elem !== 'iUpdatedby' && elem !== 'iStatusID' && elem !== 'iTemplateID' && elem !== 'cTemplateFile'
+                        && elem !== 'cScacCode' && elem !== 'iMemberID' && elem !== 'cTemplateStatusFile'
+                        && elem !== 'cUploadedFile' && elem !== 'cTemplateStatusUploadedFile' && elem !== 'cUploadStatus'
+                        && elem !== 'tUpdated' && elem != 'cAddtionalFile' && elem != 'cAddtionalComment' && elem != 'cExceptionDetails'
+                        && elem != 'bProcesslock' && elem != 'bProcessed' && elem != 'isRateExtendMode'
+                        && elem != 'cUploadType' && elem != 'tProcessStart' && elem != 'tProcessEnd' && elem != 'iEnteredby'
+                        && elem != 'tEntered' && elem != 'iActiveStatus'));
 
-                aSchemafiltered.push("cUploadedBy", "cScacCode", "tEntered", "tProcessStart", "tProcessEnd");
-                break;
+                    aSchemafiltered.push("cUploadedBy", "cScacCode", "tEntered", "tProcessStart", "tProcessEnd");
+                    break;
 
-            case "CONSOLIDATE":
-                // Schema = Object.keys(model('tmpl_consolidationreqs').schema.paths);
-                 Schema = Object.keys(TmplConsolidationReq.schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));
+                case "CONSOLIDATE":
+                    // Schema = Object.keys(model('tmpl_consolidationreqs').schema.paths);
+                    Schema = Object.keys(TmplConsolidationReq.schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "cStatus");
+                    break;
 
-            case "MEMBER_SUBMISSION_TEMPLATE_LOGS":
-                // Schema = Object.keys(model('tmpl_membersubmissiondownloadlogs').schema.paths);
-                Schema = Object.keys(MemberSubmissionDownloadLogSchema.schema.paths);
-                aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
-                    && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
-                    && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));
+                case "MEMBER_SUBMISSION_TEMPLATE_LOGS":
+                    // Schema = Object.keys(model('tmpl_membersubmissiondownloadlogs').schema.paths);
+                    Schema = Object.keys(MemberSubmissionDownloadLogSchema.schema.paths);
+                    aSchemafiltered = Schema.filter(elem => (elem !== '_id' && elem !== '__v' && elem !== 'iEnteredby' && elem !== 'iUpdatedby'
+                        && elem != 'iTemplateID' && elem != 'cTemplateStatusFile' && elem != 'cTemplateStatusUploadedFile'
+                        && elem !== 'iStatusID' && elem != 'tEntered' && elem !== 'tUpdated' && elem !== 'IsConsolidationRequested'));
 
-                aSchemafiltered.push("tEntered", "cEnteredby", "cStatus");
-                break;
+                    aSchemafiltered.push("tEntered", "cEnteredby", "cStatus");
+                    break;
+
+            }
+
+            return aSchemafiltered
+        } catch (error) {
+            console.log("error====>", error);
 
         }
 
-        return aSchemafiltered
     }
 
     /**

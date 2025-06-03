@@ -41,6 +41,7 @@ import GenEmailtemplates, { IEmailtemplates } from "../models/GenEmailtemplates"
 import TemplateType from "../models/GenTemplateType";
 import GenLane from "../models/GenLane";
 import GenLaneSchedule from "../models/GenLaneSchedule";
+import { ClsDCT_MemberSubmissionTemplate } from "./Class.membersubmissiontemplate";
 
 export class ClsDCT_ManageTemplate extends ClsDCT_Common {
     public cTemplateName: any;
@@ -86,9 +87,10 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
     public _cTemplateCommentsFileJSON: any; //Template Validation Success/Error Message Json
 
     public tCuttoffdate: any;//added by stewari
-
+    public consolidateTemplate = new ClsDCT_ConsolidateTemplate()
     public _oEmailTemplateCls: any = new ClsDCT_EmailTemplate();
     private _oCommonCls = new ClsDCT_Common();
+    public memberSubmissionTemplate = new ClsDCT_MemberSubmissionTemplate()
     private isRateExtendMode = 'false';
     /**
      * Constructor
@@ -937,7 +939,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                             oTemplateDetails[0].oTemplateMetaDataListing = oStatData
                             await this.FunDCT_SendUploadStatus(oResponseParse, oTemplateDetails, oResPyProg, cDirTemplateStatusFile, oTemplateMetaData);
                         }
-                        else if(bExceptionfound == 'Y' && this._cUploadType !== 'DISTRIBUTE') {
+                        else if (bExceptionfound == 'Y' && this._cUploadType !== 'DISTRIBUTE') {
                             let oEmailTemplateList;
                             if (oTemplateMetaData.cEmailFrom && oTemplateMetaData.cEmailFrom.trim() !== '') {
                                 oEmailTemplateList = await GenEmailtemplates.aggregate([
@@ -983,16 +985,16 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                                 .filter(Boolean) // removes undefined or empty strings
                                 .map(email => email.trim())
                                 .join(',');
-                                
+
                             this._oEmailTemplateCls.FunDCT_SetCc(cCc);
                             // oEmailTemplateDetails = await GenEmailtemplates.find(cQueryUsing);
                             if (oEmailTemplateDetailList) {
                                 // this._oEmailTemplateCls.FunDCT_SetEmailTemplateID(oEmailTemplateDetails[0]._id)
                                 this._oEmailTemplateCls.FunDCT_SetEmailTemplateID('');
                             }
-                            this._oEmailTemplateCls.FunDCT_SetSubject("CENTRIC Errors in "+aVariablesVal.DCTVARIABLE_TEMPLATENAME)
+                            this._oEmailTemplateCls.FunDCT_SetSubject("CENTRIC Errors in " + aVariablesVal.DCTVARIABLE_TEMPLATENAME)
                             await this._oEmailTemplateCls.FunDCT_SendNotification('MEMBER_UPLOAD', oEmailTemplateDetailList.cEmailType, aVariablesVal, this.cEmail);
-                            
+
                         }
                     }
 
@@ -1599,7 +1601,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     tCuttoffdate: (this._cUploadType == 'DISTRIBUTE') ? this.FunDCT_GetCuttoffdate() : '0000-00-00',//added by stewari
                     cFileDir: cFileDir, cFileName: this._cTempFileUploadTemplate, cFileType: this._cFileTypeUploadTemplate,
                     cSampleTemplateFileDir: this.cDirTemplateSampleFile, cSampleTemplateFile: 'CREATE_TEMPLATE-SAMPLE-' + iTemplateID, cSampleFileType: this._cFileTypeUploadTemplate,
-                    cDirValidateTemplateHeaderLevel: cDirTemplateHeaderLevel, _cValidateTemplateFileJSON: aHeadersLast,
+                    cDirValidateTemplateHeaderLevel: cDirTemplateHeaderLevel, _cValidateTemplateFileJSON: '',
                     _iTemplateUploadLogID: this._iTemplateUploadLogID, _cValidateTmplateStatusFile: this._cValidateTmplateStatusFile, cDirValidateTemplateStatusFile: cDirTemplateStatusFile,
                     iMaxDepthHeaders: this._oGetTemplateMetaDataDetails[0]['iMaxDepthHeaders'],
                     _cValidatedExcelToJSONSuccessFile: this._cValidatedExcelToJSONSuccessFile,
@@ -1608,7 +1610,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     cDirDistribution: this.cDirDistributionTemplate,
                     cDirConsolidation: this.cDirConsolidationTemplate,
                     cTemplateType: this.FunDCT_GetTemplateType(),
-                    _cTemplateCommentsFileJSON: aComments,
+                    _cTemplateCommentsFileJSON: '',
                     cAdditionalFieldValue: (cAdditionalFieldValue ? cAdditionalFieldValue : '-'),
                     cUserID: userID ? userID : '0001',
                     cType: stream,
@@ -1699,7 +1701,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
         }
     }
 
-    public addUpdateDataIntoGenLaneAndGenLaneSchedule = async (cTemplateType, currentUserId, tmplUploadLogDetail) => {
+    public addUpdateDataIntoGenLaneAndGenLaneSchedule = async (cTemplateType, currentUserId, tmplUploadLogDetail, cProcessingType) => {
         try {
             const templateTypeDetails = await TemplateType.find(
                 { cTemplateType: cTemplateType }
@@ -1707,7 +1709,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
 
             const query = {
                 iTemplateTypeID: templateTypeDetails[0]._id,
-                cProcessingType: "TemplateUpload",
+                cProcessingType: cProcessingType,
             };
 
             // Check if document exists
@@ -1729,7 +1731,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 update = {
                     $set: {
                         iTemplateTypeID: templateTypeDetails[0]._id,
-                        cProcessingType: "TemplateUpload",
+                        cProcessingType: cProcessingType,
                         iToDo: 1,
                         iEnteredby: currentUserId,
                         tEntered: new Date()
@@ -1738,7 +1740,25 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             }
             const options = { upsert: true, new: true };
             await GenLane.findOneAndUpdate(query, update, options);
-            const jDumpDetails = await this.getJDumpDetails(templateTypeDetails[0]._id, tmplUploadLogDetail._id)
+            let jDumpDetails;
+
+            if (cProcessingType === "TemplateUpload") {
+                jDumpDetails = await this.getJDumpDetails(
+                    templateTypeDetails[0]._id,
+                    tmplUploadLogDetail._id
+                );
+            } else if (cProcessingType === "Consolidate") {
+                jDumpDetails = await this.consolidateTemplate.getConsolidateTemplateJDump(
+                    templateTypeDetails[0]._id,
+                    tmplUploadLogDetail._id
+                );
+            } else if (cProcessingType === "MemberSubConsolidate") {
+                jDumpDetails = await this.memberSubmissionTemplate.getMemberSubmissionJDump(
+                    templateTypeDetails[0]._id,
+                    tmplUploadLogDetail._id
+                );
+            }
+
             await GenLaneSchedule.insertMany(jDumpDetails)
         } catch (error) {
             return error;

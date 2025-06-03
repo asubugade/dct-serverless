@@ -50,7 +50,7 @@ export class UploadTemplateService {
             }
 
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- Before File')
-            let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(formData.aTemplateFileInfo.content, this._oCommonCls.cAWSBucket + '/templates/uploadtemplate/interteam/' + 'UPLOAD_TEMPLATE-' + iTemplateID + '-' + Date.now() + formData.aTemplateFileInfo.filename.substring(formData.aTemplateFileInfo.filename.lastIndexOf('.'), formData.aTemplateFileInfo.filename.length));
+            let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(formData.aTemplateFileInfo.content, this._oCommonCls.cDirTemplateInterTeamUploadTemplate + 'UPLOAD_TEMPLATE-' + iTemplateID + '-' + Date.now() + formData.aTemplateFileInfo.filename.substring(formData.aTemplateFileInfo.filename.lastIndexOf('.'), formData.aTemplateFileInfo.filename.length));
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- After File')
             let cAddtionalFile;
             if (formData?.cAdditionalFiles?.length > 0) {
@@ -85,7 +85,7 @@ export class UploadTemplateService {
             let oTemplates = new TmplUploadLog(aRequestDetails);
             const tmplUploadLogDetail = await oTemplates.save();
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplates.save')
-            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, tmplUploadLogDetail)
+            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, tmplUploadLogDetail , "TemplateUpload")
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);
         } catch (err) {
             this._oCommonCls.log(err)

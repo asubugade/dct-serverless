@@ -160,7 +160,7 @@ export class MemberAdminUploadService {
                         this._oEmailTemplateCls.FunDCT_SetSubject(aVariablesVal.DCTVARIABLE_TEMPLATENAME + ' (' + iDefaultSubject + ')') //oEmailTemplateDetails[0].cSubject
                         await this._oEmailTemplateCls.FunDCT_SendNotification('RATE_EXTEND', oEmailTemplateDetailList.cEmailType, aVariablesVal, cEmailList);
                     }
-                    await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, memTmplUploadLogDetail)
+                    await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, memTmplUploadLogDetail , "TemplateUpload")
                     return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_UPLOADED', 200, aRequestDetails);
                 }
             }

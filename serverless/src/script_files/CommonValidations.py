@@ -1467,9 +1467,13 @@ def FunDCT_Default_Scac(oPostParameters):
         # Create Member Wise File For Template Distribution
         if bValidate == True and bCheckMember == True:
             if FunDCT_ScacExist(aDistributionMembers, str(oPostParameters['oCellVal']).strip()) == False:
-                oPostParameters['cMemberDistributionFilePath'] = oPostParameters['cDirValidateTemplateStatusFile'] + str(oPostParameters['oCellVal']).strip() + \
-                    '_' + oPostParameters['iTemplateID'] + '_' + \
-                    str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) + '.xlsx'
+                oPostParameters['cMemberDistributionFilePath'] = (
+                    oPostParameters['cDirValidateTemplateStatusFile'] +
+                    str(oPostParameters['oCellVal']).strip() + '_' +
+                    str(oPostParameters['iTemplateID']) + '_' +
+                    str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) +
+                    '.xlsx'
+                )
                 copyfile(oPostParameters['cDirValidateTemplateStatusFile'] + oPostParameters['_cValidateTmplateStatusFile'], oPostParameters['cMemberDistributionFilePath'])
                 
                 FunDCT_CreateAndCopyHeader(oPostParameters)

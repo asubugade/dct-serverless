@@ -12,12 +12,6 @@ from collections import defaultdict
 from shutil import copyfile
 from datetime import datetime
 from bson.objectid import ObjectId
-from pyconfig import loadConfig
-from script_files.EmailService import EmailService
-from script_files.EmailSmtpClient import EmailSMTPClient
-from jinja2 import Template
-import html
-import re
 
 from pyconfig.LogService import LogService
 
@@ -29,9 +23,6 @@ cmd_folder = os.path.realpath(os.path.abspath(
     os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
-    
-FRONTEND_URI = loadConfig.FRONTEND_URI_LOCAL
-smtp_client = EmailSMTPClient()
 
 class model_common_Cls:
     statusActive : any
@@ -119,52 +110,7 @@ class model_common_Cls:
             LogService.log('Error : FunDCT_GetEmailFromCompanyName Error while parsing file due to ' + str(e))
             return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_GetEmailFromCompanyName Error while parsing file due to ' + str(e))
 
-    def FunDCT_GetPendingConsolidationData(self,iStatusID,pending_consl_req_id):
-        # Fetch existing consolidation request
-        existing_data = self.oPyDB.tmpl_consolidationreqs.find_one({
-            "iStatusID": iStatusID,
-            "_id": pending_consl_req_id
-        })
-        return existing_data
-        
-    def FunDCT_UpdateConsolidationData(self,iStatusID,pending_consl_req_id,aRequestDetails):        
-        updated_dataoPyDB = self.oPyDB.tmpl_consolidationreqs.find_one_and_update(
-            {"iStatusID": iStatusID, "_id": pending_consl_req_id},
-            {"$set": aRequestDetails},
-            return_document=True
-        )
-        return updated_dataoPyDB
 
-    def FunDCT_GetPendingMemberSubmissionData(self,iStatusID,pending_consl_req_id):
-        # Fetch existing consolidation request
-        existing_data = self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one({
-            "iStatusID": iStatusID,
-            "_id": pending_consl_req_id
-        })
-        return existing_data
-        
-    def FunDCT_UpdateMemberSubmissionData(self,iStatusID,pending_consl_req_id,aRequestDetails):        
-        updated_dataoPyDB = self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one_and_update(
-            {"iStatusID": iStatusID, "_id": pending_consl_req_id},
-            {"$set": aRequestDetails},
-            return_document=True
-        )
-        return updated_dataoPyDB
-    
-    def FunDCT_GetPendingUploadeTemplateUploadLog(self,iStatusID,pending_req_id):
-        oPendingConslReq = self.oPyDB.tmpl_uploadlogs.find(
-            {"iStatusID": iStatusID, "bProcesslock": "Y", "iActiveStatus": 0,
-            "_id": pending_req_id}
-        )
-        return oPendingConslReq
-    
-    def FunDCT_GetPendingMemberTemplateUploadLog(self,iStatusID,pending_req_id):
-        oPendingConslReq = self.oPyDB.mem_uploadlogs.find(
-            {"iStatusID": iStatusID, "bProcesslock": "Y", "iActiveStatus": 0,
-            "_id": pending_req_id}
-        )
-        return oPendingConslReq
-        
     def FunDCT_GetRegions(self):
         try:
             oGetActiveStatus = self.statusActive
@@ -1166,200 +1112,7 @@ class model_common_Cls:
             LogService.log('Error : FunDCT_InsertTemplateLog Error while parsing file due to ' + str(e))
             return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_InsertTemplateLog Error while parsing file due to ' + str(e))
 
-    def FunDCT_findMetadataByTemplateID(self,iTemplateID):
-        try:
-            oTemplateMetaDetails = self.oPyDB.tmpl_metadatas.find_one({"iTemplateID": ObjectId(iTemplateID)})
-            return oTemplateMetaDetails
-        except Exception as err:
-            LogService.log('Error : FunDCT_findMetadataByTemplateID ' + str(err))
-            return None
-        
-    def FunDCT_updateMetadataByTemplateID(self,iTemplateID,uData):
-        try:
-            oTemplateMetaDetails = list(self.oPyDB.tmpl_metadatas.update_one(
-                {"iTemplateID": iTemplateID},
-                {"$set": uData}
-            ))
-            return oTemplateMetaDetails
-        except Exception as err:
-            LogService.log('Error : FunDCT_updateMetadataByTemplateID ' + str(err))
-            return None
-        
-    def FunDCT_findByIDAndUpdateMetadata(self,metadataID, aRequestDetail):
-        try:
-            oTemplateMetaDetails = self.oPyDB.tmpl_metadatas.find_one_and_update(
-                {"_id": metadataID},
-                {"$set": aRequestDetail},
-                return_document=True
-            )
-            return oTemplateMetaDetails
-        except Exception as err:
-            LogService.log('Error : FunDCT_findByIDAndUpdateMetadata ' + str(err))
-            return None
-            
-    def FunDCT_GetTemplateDetails(self,iTemplateID):
-        try:
-            oTemplateDetails = list(self.oPyDB.gen_templates.aggregate([
-                {"$match": {"_id": ObjectId(iTemplateID)}},  
-                {
-                    "$lookup": {
-                        "from": "gen_statuses",
-                        "localField": "iStatusID",
-                        "foreignField": "_id",
-                        "as": "oTemplateListing"
-                    }
-                },
-                {"$unwind": "$oTemplateListing"},
-                {
-                    "$lookup": {
-                        "from": "tmpl_metadatas",
-                        "localField": "_id",
-                        "foreignField": "iTemplateID",
-                        "as": "oTemplateMetaDataListing"
-                    }
-                },
-                {"$unwind": "$oTemplateMetaDataListing"}
-            ]))
 
-            return oTemplateDetails
-        
-        except Exception as err:
-            LogService.log('Error : FunDCT_GetTemplateDetails ' + str(err))
-            return None
-
-    def FunDCT_GetTemplateUploadLog(self, iTemplateUploadLogID):
-        try:
-            oGetTemplateUploadLog = self.oPyDB.tmpl_uploadlogs.find(
-                {'_id': ObjectId(iTemplateUploadLogID)})
-            return list(oGetTemplateUploadLog)
-        except Exception as e:
-            LogService.log('Error : FunDCT_GetTemplateUploadLog Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_GetTemplateUploadLog Error while parsing file due to ' + str(e))
-        
-    def FunDCT_UpdateTemplateUploadLog(self, oTmplUploadLogId, uData):
-        try:
-            oGetTemplateUploadLog = self.oPyDB.tmpl_uploadlogs.update_one(
-                {"_id": ObjectId(oTmplUploadLogId)},
-                {
-                    "$set": uData
-                }
-            )
-            return list(oGetTemplateUploadLog)
-        except Exception as e:
-            LogService.log('Error : FunDCT_GetTemplateUploadLog Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_GetTemplateUploadLog Error while parsing file due to ' + str(e))
-        
-    def FunDCT_UpdateDistributeTemplateUploadLog( self, bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID ):
-        try:
-            oTmplUploadLog = self.oPyDB.tmpl_uploadlogs.find_one(
-                {
-                    "_id": ObjectId(_iTemplateUploadLogID), 
-                    "iActiveStatus": 0
-                }
-            )
-            if oTmplUploadLog:
-                iTemplateID = oTmplUploadLog["iTemplateID"]
-                cursor =  self.oPyDB.tmpl_uploadlogs.find(
-                    {
-                        "iTemplateID": iTemplateID,
-                        "bExceptionfound": "N",
-                        "bProcesslock": "N",
-                        "bProcessed": "Y",
-                        "iActiveStatus": 0,
-                        "cExceptionDetails": "{}",
-                    },
-                    {
-                        "iTemplateID": 1,
-                        "cDistributionDetails": 1,
-                        "cTemplateName": 1,
-                    }
-                ).sort("_id", -1)
-                recordsList = list(cursor)
-
-# Extract cDistributionDetails from recordsList
-                existingDistributionDetails = {}
-                for record in recordsList:
-                    distributionDetails = record.get("cDistributionDetails", {})  # Get distribution details or empty dict
-                    for key, value in distributionDetails.items():
-                        existingDistributionDetails[value["cDistScaccode"]] = value  # Store by cDistScaccode
-
-# Get new distribution details
-                newDistributionDetails = aValidateResponse.get("cDistributionDetails", {})
-
-# Compare and add unmatched records to existingDistributionDetails
-                for key, newRecord in newDistributionDetails.items():
-                    scacCode = newRecord["cDistScaccode"]
-                    
-# Add only if not found in existingDistributionDetails
-                    if scacCode not in existingDistributionDetails:
-                        existingDistributionDetails[scacCode] = newRecord
-
-                aTmplUploadLogFields["cDistributionDetails"] = existingDistributionDetails
-                oTemplateUploadLog = self.oPyDB.tmpl_uploadlogs.find_one_and_update(
-                    {"_id": ObjectId(_iTemplateUploadLogID), "iActiveStatus": 0},
-                    {"$set": aTmplUploadLogFields},
-                    return_document=True
-                )
-
-            return oTemplateUploadLog
-        except Exception as e:
-            LogService.log('Error : FunDCT_UpdateDistributeTemplateUploadLog Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateDistributeTemplateUploadLog Error while parsing file due to ' + str(e))
-
-    def FunDCT_UpdateExceptionTemplateLogsData( self, collectionName, oPostParameters ):
-        try:
-            if collectionName == 'tmpl_uploadlogs':
-                oStatusDetails = self.statusActive[0]
-                iStatusID = oStatusDetails.get('_id')
-                pending_req_id = ObjectId(oPostParameters.get('oPendingUploadReqId', ''))
-                oPendingConslReq = self.FunDCT_GetPendingUploadeTemplateUploadLog(iStatusID,pending_req_id)
-                
-                aRequestDetails = { "bProcesslock": "N", "bProcessed": "F", "tProcessEnd": datetime.utcnow(), "tUpdated": datetime.utcnow() }
-                
-                data = self.oPyDB.tmpl_uploadlogs.find_one_and_update(
-                    {"iStatusID": iStatusID, "_id": ObjectId(oPendingConslReq[0]["_id"]), "iActiveStatus": 0},
-                    {"$set": aRequestDetails},
-                    return_document=True
-                )
-            if collectionName == 'mem_uploadlogs':
-                oStatusDetails = self.statusActive[0]
-                iStatusID = oStatusDetails.get('_id')
-                pending_req_id = ObjectId(oPostParameters.get('oPendingUploadReqId', ''))
-                oPendingConslReq = self.FunDCT_GetPendingMemberTemplateUploadLog(iStatusID,pending_req_id)
-                
-                aRequestDetails = { "bProcesslock": "N", "bProcessed": "F", "tProcessEnd": datetime.utcnow(), "tUpdated": datetime.utcnow() }
-                
-                data = self.oPyDB.mem_uploadlogs.find_one_and_update(
-                    {"iStatusID": iStatusID, "_id": ObjectId(oPendingConslReq[0]["_id"]), "iActiveStatus": 0},
-                    {"$set": aRequestDetails},
-                    return_document=True
-                )
-
-            return data
-        except Exception as e:
-            LogService.log('Error : FunDCT_UpdateExceptionTemplateLogsData Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateExceptionTemplateLogsData Error while parsing file due to ' + str(e))
-
-    def FunDCT_UpdateMemberTemplateUploadLog(self, bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID ):
-        try:
-            oMemTmplUploadLog = self.oPyDB.mem_uploadlogs.find_one(
-                {"_id": ObjectId(_iTemplateUploadLogID), "iActiveStatus": 0}
-            )
-
-            if oMemTmplUploadLog:
-                isRateExtendMode = oMemTmplUploadLog.get('isRateExtendMode')
-
-                oMemberTemplateUploadLog = self.oPyDB.mem_uploadlogs.find_one_and_update(
-                    {"_id": oMemTmplUploadLog.get('_id'), "iActiveStatus": 0},
-                    {"$set": aTmplUploadLogFields},
-                    return_document=True  # Equivalent to `{ new: true }` in Mongoose
-                )
-
-            return oMemberTemplateUploadLog
-        except Exception as e:
-            LogService.log('Error : FunDCT_UpdateMemberTemplateUploadLog Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateMemberTemplateUploadLog Error while parsing file due to ' + str(e))
-        
     def FunDCT_GetTemplateLog(self,cCollection, iTemplateUploadLogID):
         try:
             if cCollection == 'tmpl_uploadlogs':
@@ -1516,19 +1269,30 @@ class model_common_Cls:
         ))
         return [template['_id'] for template in valid_templates]
     def get_LaneTodo(self):
-        lanes = list(self.oPyDB.gen_lane.find(
+        lanes = list(self.oPyDB.gen_lanes.find(
             {'iToDo': {'$gt': 0}} 
         ))
-        return list(lanes)
+        return lanes
+    def get_LaneScheduleById(self, _id):
+        try:
+            lanes = list(self.oPyDB.gen_laneschedules.find(
+                {'_id': {'$eq': ObjectId(_id)}} 
+            ).limit(1))
+            return lanes[0]
+        except:
+            return None
     def get_LaneSchedule(self,iTemplateID):
-        lanes = list(self.oPyDB.gen_laneSchedule.find(
-            {'iTemplateTypeID': {'$eq': ObjectId(iTemplateID)}} 
-        ).limit(1))
-        if len(list(lanes)) >= 1:
-            return list(lanes)[0]
-        return list(lanes)
+        try:
+            lanes = list(self.oPyDB.gen_laneschedules.find(
+                {'iTemplateTypeID': {'$eq': ObjectId(iTemplateID)}} 
+            ).limit(1))
+            if len(lanes) >= 1:
+                return lanes[0]
+            return lanes
+        except:
+            return None
     def delete_LaneSchedulebyID(self,id):
-        result = self.oPyDB.gen_laneSchedule.delete_one(
+        result = self.oPyDB.gen_laneschedules.delete_one(
             {'_id': ObjectId(id)})
     def update_LaneIncremental(self,lid):
         update_operation = {
@@ -1536,7 +1300,7 @@ class model_common_Cls:
         }
 
         # Perform the update operation
-        result = self.oPyDB.gen_lane.update_one(
+        result = self.oPyDB.gen_lanes.update_one(
             {"_id": ObjectId(lid)},  # Find document by its _id
             update_operation  # Perform the increment update
         )
@@ -1544,502 +1308,140 @@ class model_common_Cls:
         update_operation = {
             "$inc": {"iActive": -1,"iToDo":-1}  # decremtn iActive by -1
         }
-        result = self.oPyDB.gen_lane.update_one(
+        result = self.oPyDB.gen_lanes.update_one(
             {"_id": ObjectId(lid)}, 
             update_operation  # Perform the increment update
         )
-    
-    def FunDCT_SendSMTPNotification(self, cProcessCode, oEmailTemplateDetailList, aEmailVariablesVal, aVariablesVal, toEmail):
+
+    def FunDCT_UpdateTemplateStartprocessingAndProcesslock(self,iTemplateUploadLogID, tProcessStart=None,bProcesslock='Y'):
         try:
-    # Add from email id set default.
-            test_source_email = 'WWA <' + oEmailTemplateDetailList['cFrom'] + '>'
-            
-    # Add email 'Send To' set default.
-            if isinstance(toEmail, str):
-                toEmail = [toEmail]
-            test_to_emails = list(dict.fromkeys(toEmail))
-            # test_to_emails = toEmail
-
-    # Add email bcc set default.
-            test_bcc_emails = ['']
-
-    # Add extra_cc_emails if available
-            test_cc_emails = []
-            test_cc_emails.append(oEmailTemplateDetailList['cFrom'])  # Add user's email to cc array
-            
-            if 'cBcc' in oEmailTemplateDetailList and oEmailTemplateDetailList['cBcc']:
-                test_cc_emails.extend(oEmailTemplateDetailList['cBcc'].split(','))
-            if 'extra_cc_emails' in aEmailVariablesVal and aEmailVariablesVal['extra_cc_emails']:
-                test_cc_emails.extend(aEmailVariablesVal['extra_cc_emails'].split(','))
-            test_cc_emails = list(dict.fromkeys(test_cc_emails)) # Remove duplicates while preserving order
-                
-    # Add subject if provided or set default.
-            if 'extra_subject' in aEmailVariablesVal and aEmailVariablesVal['extra_subject']: 
-                test_subject = aEmailVariablesVal['extra_subject']
-            else:
-                test_subject = oEmailTemplateDetailList['cSubject']
-
-    # Add email body set default.
-            if 'eEditedEmailBody' in aEmailVariablesVal and aEmailVariablesVal['eEditedEmailBody']: 
-                test_body = aEmailVariablesVal['eEditedEmailBody']
-            else:
-                test_body = oEmailTemplateDetailList['cEmailBody']
-            
-    # Registering "DCTVARIABLE_ADDITIONALEMAILBODY" and "DCTVARIABLE_INSTRUCTIONFILE_CONTENT" || remove html tags from vars.
-            # if 'DCTVARIABLE_ADDITIONALEMAILBODY' in aVariablesVal:
-            #     aVariablesVal['DCTVARIABLE_ADDITIONALEMAILBODY'] = html.escape(aVariablesVal['DCTVARIABLE_ADDITIONALEMAILBODY'])
-            # if 'DCTVARIABLE_INSTRUCTIONFILE_CONTENT' in aVariablesVal:
-            #     aVariablesVal['DCTVARIABLE_INSTRUCTIONFILE_CONTENT'] = html.escape(aVariablesVal['DCTVARIABLE_INSTRUCTIONFILE_CONTENT'])
-
-    # Set & render email body
-            template = Template(test_body)
-            test_body = template.render(aVariablesVal)
-
-    # Call the sendTemplatedEmail function
-            EmailService.sendTemplatedEmail(
-                test_body,            # templateAsHTML
-                "Test Trigger",       # trigger (added for consistency)
-                test_subject,         # title
-                test_source_email,    # user_email
-                {},                   # metadata (empty dict for now)
-                smtp_client,          # client (EmailSMTPClient instance)
-                test_to_emails,
-                test_cc_emails,
-                test_bcc_emails,
-                None                  # notification_email (optional)
-            )
+            if tProcessStart is None: tProcessStart = datetime.now()
+            self.oPyDB.tmpl_uploadlogs.find_one_and_update({'_id': ObjectId(
+                iTemplateUploadLogID)}, {'$set': {'bProcesslock': bProcesslock,'tProcessStart':tProcessStart}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
         
-        except Exception as e:
-            LogService.log('Error : FunDCT_SendSMTPNotification Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendSMTPNotification Error while parsing file due to ' + str(e))
-
-    def FunDCT_SendDistributionDetails(self, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData,oParams):
+    def FunDCT_UpdateTemplateEndprocessingAndProcesslock(self,iTemplateUploadLogID, tProcessEnd=None,bProcesslock='N'):
         try:
-            ccEmailArray = []  # cc array
-            sendToEmailArray = []  # sendTo array
-            oEmailTemplateList = []
-            selectedMember = ''
-            cEmailSubject = ''
-
-            cUsername = oParams["oRequestedByUserDetails"].get("cUsername", "")
-            cEmail = oParams["oRequestedByUserDetails"].get("cEmail", "")
-            _iTemplateUploadLogID = oParams['_iTemplateUploadLogID']
-            sendToEmailArray.append(cEmail)  # Add user's email to cc array
-
-            aVariablesVal = {
-                "DCTVARIABLE_USERNAME": "User",
-                "DCTVARIABLE_TEMPLATENAME": oTemplateDetails[0]["cTemplateName"],
-                "DCTVARIABLE_ADDITIONALEMAILBODY": oTemplateMetaData["cEmailText"],
-            }
-            
-            # Additional Email if exists
-            if oTemplateMetaData.get("cAdditionalEmail") and oTemplateMetaData["cAdditionalEmail"] != "null":
-                emailArray = [email.strip() for email in oTemplateMetaData["cAdditionalEmail"].split(",")]
-                ccEmailArray.extend(emailArray)  # Add additional emails to cc array
-
-            oTmplUploadLog = self.FunDCT_GetTemplateUploadLog(_iTemplateUploadLogID)
-            if oTmplUploadLog[0]["iActiveStatus"] == -1:
-                self.FunDCT_UpdateTemplateUploadLog(
-                    _iTemplateUploadLogID, 
-                    { "iActiveStatus": -1, "bExceptionfound": "Y", "bProcesslock": "N", "bProcessed": "F" }
-                )
-                self.FunDCT_updateMetadataByTemplateID(
-                    oTmplUploadLog[0]["iTemplateID"], 
-                    { "iRedistributedIsUploaded": "1" }
-                )
-                return
-            if oTmplUploadLog:
-                selectedMember = oTmplUploadLog[0].get("cSelectedMembers")
-                
-            if oTemplateMetaData.get("cEmailFrom") != "":
-                ccEmailArray.append(oTemplateMetaData["cEmailFrom"])
-
-            if oTemplateMetaData.get("cEmailSubject") != '':
-                cEmailSubject = oTemplateMetaData["cEmailSubject"]
-            
-            
-            if aValidateResponse.get("cDistributionDetails") and len(aValidateResponse["cDistributionDetails"]) > 0 and not aValidateResponse.get("iErrorLenth"):
-                for cKey in aValidateResponse["cDistributionDetails"]:
-                    cDistScaccode = aValidateResponse["cDistributionDetails"][cKey].get("cDistScaccode", "")
-                    cMemberEmail = aValidateResponse["cDistributionDetails"][cKey].get("cMemberEmail", "")
-                    
-                    if selectedMember and len(selectedMember) > 0:
-                        if cDistScaccode in selectedMember:
-                            sendToEmailArray.append(cMemberEmail)
-                    else:
-                        sendToEmailArray.append(cMemberEmail)
-
-            aEmailVariablesVal = {
-                "extra_subject": cEmailSubject,
-                "extra_to_emails": ",".join(sendToEmailArray),
-                "extra_cc_emails": ",".join(ccEmailArray),
-            }
-            cQueryEmailFrom = {}
-            cQueryProcessCode = []
-            if oTemplateMetaData["cEmailTemplateID"]:
-                cQueryEmailFrom = { "_id": ObjectId(oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailTemplateID"]) }
-            else:
-                cQueryEmailFrom = { "cFrom": oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailFrom"].strip() }
-                cQueryProcessCode = { 
-                    {"$unwind": "$oProcessListing.cProcessCode"},
-                    {
-                        "$match": {
-                            "oProcessListing.cProcessCode": "UPLOAD_TEMPLATE"
-                        }
-                    } 
-                }
-
-            if oTemplateDetails[0]["oTemplateMetaDataListing"].get("cEmailFrom", "").strip():
-                oEmailTemplateList = list(self.oPyDB.gen_emailtemplates.aggregate([
-                    { "$match": cQueryEmailFrom },
-                    {
-                        "$lookup": {
-                            "from": "gen_processes",
-                            "localField": "iProcessID",
-                            "foreignField": "_id",
-                            "as": "oProcessListing"
-                        }
-                    },
-                    {"$unwind": "$oProcessListing"},
-                    *cQueryProcessCode
-                ]))
-
-            if oEmailTemplateList and len(oEmailTemplateList) > 0:
-                oEmailTemplateDetailList = oEmailTemplateList[0]
-                self.FunDCT_SendSMTPNotification(
-                    "UPLOAD_TEMPLATE",
-                    oEmailTemplateDetailList,
-                    aEmailVariablesVal,
-                    aVariablesVal,
-                    sendToEmailArray
-                )
-
+            if tProcessEnd is None: tProcessEnd = datetime.now()
+            self.oPyDB.tmpl_uploadlogs.find_one_and_update({'_id': ObjectId(
+                iTemplateUploadLogID)}, {'$set': {'bProcesslock': bProcesslock,'tProcessEnd':tProcessEnd}}, new=True)
         except Exception as e:
-            LogService.log('Error : FunDCT_SendDistributionDetails Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendDistributionDetails Error while parsing file due to ' + str(e))
+            LogService.log('Error : FunDCT_UpdateTemplateEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateTemplateEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
 
-    def FunDCT_SendMemberUploadDetails(self, oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData,oParams):
+
+    def FunDCT_UpdateMemberStartprocessingAndProcesslock(self,iTemplateUploadLogID, tProcessStart=None,bProcesslock='Y'):
         try:
-            member_email = ''
-            ccEmailArray = []  # cc array
-            sendToEmailArray = []  # sendTo array
-            oEmailTemplateList = []
-            cEmailSubject = ''
-
-            bExceptionfound = 'Y' if aValidateResponse["iErrorLenth"] > 0 else 'N'
-            cUsername = oParams["oRequestedByUserDetails"].get("cUsername", "")
-            sCompanyname = oParams.get("_cCompanyname", "")
-            cEmail = oParams["oRequestedByUserDetails"].get("cEmail", "")
-            sCompanyDetails = self.FunDCT_GetEmailFromCompanyName(sCompanyname)
-            _iTemplateUploadLogID = oParams['_iTemplateUploadLogID']
-            sendToEmailArray.append(cEmail)  # Add user's email to cc array
-            sendToEmailArray.append(sCompanyDetails)  # Add user's email to cc array
-            cDistributionDetails = aValidateResponse.get("cDistributionDetails")
-            if cDistributionDetails and len(cDistributionDetails) > 0:
-                member_email = aValidateResponse["cDistributionDetails"][1].get("cMemberEmail", "")
-                sendToEmailArray.append(member_email)  # Add user's email to cc array
-                
-            rate_extension = "Rates Extension" if oUpdateUploadLog.get("isRateExtendMode") == "true" else ""
-
-            # cQueryEmailFrom = {}
-            # cQueryProcessCode = []
-            # if oTemplateMetaData["cEmailTemplateID"]:
-            #     cQueryEmailFrom = { "_id": ObjectId(oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailTemplateID"]) }
-            # else:
-            cQueryEmailFrom = { "cFrom": oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailFrom"].strip() }
-            cQueryProcessCode = [
-                {"$unwind": "$oProcessListing.cProcessCode"},
-                {
-                    "$match": {
-                        "oProcessListing.cProcessCode": "MEMBER_UPLOAD"
-                    }
-                }
-            ]
-
-            if oTemplateDetails[0]["oTemplateMetaDataListing"].get("cEmailFrom", "").strip():
-                oEmailTemplateList = list(self.oPyDB.gen_emailtemplates.aggregate([
-                    { "$match": cQueryEmailFrom },
-                    {
-                        "$lookup": {
-                            "from": "gen_processes",
-                            "localField": "iProcessID",
-                            "foreignField": "_id",
-                            "as": "oProcessListing"
-                        }
-                    },
-                    {"$unwind": "$oProcessListing"},
-                    *cQueryProcessCode
-                ]))
-
-            aVariablesVal = {
-                "DCTVARIABLE_RATE_EXTENSION": rate_extension,
-                "DCTVARIABLE_USERNAME": cUsername,
-                "DCTVARIABLE_TEMPLATENAME": oTemplateDetails[0]["cTemplateName"],
-                "DCTVARIABLE_STATUSFILE": FRONTEND_URI + "sessions/s3download?downloadpath=" + aValidateResponse["cStatusFilePath"],
-                "DCTVARIABLE_EXCEPTION_FOUND": bExceptionfound
-                # "DCTVARIABLE_ADDITIONALEMAILBODY": oTemplateMetaData["cEmailText"],
-            }
-
-            # if bExceptionfound == 'Y':
-            #     aVariablesVal["DCTVARIABLE_EXCEPTION_FOUND"] = "Y"
-
-            if isinstance(aValidateResponse.get('aValidateContent'), dict) and aValidateResponse['aValidateContent'] is not None:
-                if len(aValidateResponse['aValidateContent'].keys()) > 0:
-                    aVariablesVal['DCTVARIABLE_EXCEPTION_FOUND'] = 'Y'
-                    cEmailSubject = f"Centric Errors in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-                else:
-                    cEmailSubject = f"Centric Success in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-            
-            if oEmailTemplateList[0].get('cEmailBody'):
-                email_body = oEmailTemplateList[0]['cEmailBody']
-                # exception_found = aVariablesVal.get('DCTVARIABLE_EXCEPTION_FOUND')
-
-                if bExceptionfound == 'Y':
-                    cEmailSubject = f"Centric Errors in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-                    eEditedEmailBody = re.sub(r'<!-- SUCCESSSTART -->[\s\S]*?<!-- SUCCESSEND -->', '', email_body)
-                elif bExceptionfound == 'N':
-                    cEmailSubject = f"Centric Success in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-                    eEditedEmailBody = re.sub(r'<!-- ERRORSTART -->[\s\S]*?<!-- ERROREND -->', '', email_body)
-                else:
-                    eEditedEmailBody = email_body
-                    
-            aEmailVariablesVal = {
-                "extra_subject": cEmailSubject,
-                "extra_to_emails": ",".join(sendToEmailArray),
-                "extra_cc_emails": ",".join(ccEmailArray),
-                "eEditedEmailBody": eEditedEmailBody
-            }
-
-            if oEmailTemplateList and len(oEmailTemplateList) > 0:
-                oEmailTemplateDetailList = oEmailTemplateList[0]
-                self.FunDCT_SendSMTPNotification(
-                    "MEMBER_UPLOAD",
-                    oEmailTemplateDetailList,
-                    aEmailVariablesVal,
-                    aVariablesVal,
-                    sendToEmailArray
-                )
-
+            if tProcessStart is None: tProcessStart = datetime.now()
+            self.oPyDB.mem_uploadlogs.find_one_and_update({'_id': ObjectId(
+                iTemplateUploadLogID)}, {'$set': {'bProcesslock': bProcesslock,'tProcessStart':tProcessStart}}, new=True)
         except Exception as e:
-            LogService.log('Error : FunDCT_SendMemberUploadDetails Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendMemberUploadDetails Error while parsing file due to ' + str(e))
+            LogService.log('Error : FunDCT_UpdateMemberStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateMemberStartprocessingAndProcesslock Error while parsing file due to ' + str(e))  
 
-    def FunDCT_SendAdminMemberUploadDetails(self, oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData,oParams):
+    def FunDCT_UpdateUploadlogExceptionfoundAndProcessed(self,iTemplateUploadLogID,bExceptionfound,bProcessed):
         try:
-            member_email = ''
-            ccEmailArray = []  # cc array
-            sendToEmailArray = []  # sendTo array
-            oEmailTemplateList = []
-            cEmailSubject = ''
-
-            bExceptionfound = 'Y' if aValidateResponse["iErrorLenth"] > 0 else 'N'
-            cUsername = oParams["oRequestedByUserDetails"].get("cUsername", "")
-            cEmail = oParams["oRequestedByUserDetails"].get("cEmail", "")
-            _iTemplateUploadLogID = oParams['_iTemplateUploadLogID']
-            sendToEmailArray.append(cEmail)  # Add user's email to cc array
-            cDistributionDetails = aValidateResponse.get("cDistributionDetails")
-            if cDistributionDetails and len(cDistributionDetails) > 0:
-                member_email = aValidateResponse["cDistributionDetails"][1].get("cMemberEmail", "")
-                ccEmailArray.append(member_email)  # Add user's email to cc array
-                
-            rate_extension = "Rates Extension" if oUpdateUploadLog.get("isRateExtendMode") == "true" else ""
-
-            # cQueryEmailFrom = {}
-            # cQueryProcessCode = []
-            # if oTemplateMetaData["cEmailTemplateID"]:
-            #     cQueryEmailFrom = { "_id": ObjectId(oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailTemplateID"]) }
-            # else:
-            cQueryEmailFrom = { "cFrom": oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailFrom"].strip() }
-            cQueryProcessCode = [
-                {"$unwind": "$oProcessListing.cProcessCode"},
-                {
-                    "$match": {
-                        "oProcessListing.cProcessCode": "MEMBER_UPLOAD"
-                    }
-                }
-            ]
-
-            if oTemplateDetails[0]["oTemplateMetaDataListing"].get("cEmailFrom", "").strip():
-                oEmailTemplateList = list(self.oPyDB.gen_emailtemplates.aggregate([
-                    { "$match": cQueryEmailFrom },
-                    {
-                        "$lookup": {
-                            "from": "gen_processes",
-                            "localField": "iProcessID",
-                            "foreignField": "_id",
-                            "as": "oProcessListing"
-                        }
-                    },
-                    {"$unwind": "$oProcessListing"},
-                    *cQueryProcessCode
-                ]))
-
-            aVariablesVal = {
-                "DCTVARIABLE_RATE_EXTENSION": rate_extension,
-                "DCTVARIABLE_USERNAME": cUsername,
-                "DCTVARIABLE_TEMPLATENAME": oTemplateDetails[0]["cTemplateName"],
-                "DCTVARIABLE_STATUSFILE": FRONTEND_URI + "sessions/s3download?downloadpath=" + aValidateResponse["cStatusFilePath"],
-                "DCTVARIABLE_EXCEPTION_FOUND": bExceptionfound
-                # "DCTVARIABLE_ADDITIONALEMAILBODY": oTemplateMetaData["cEmailText"],
-            }
-
-            # if bExceptionfound == 'Y':
-            #     aVariablesVal["DCTVARIABLE_EXCEPTION_FOUND"] = "Y"
-
-            if isinstance(aValidateResponse.get('aValidateContent'), dict) and aValidateResponse['aValidateContent'] is not None:
-                if len(aValidateResponse['aValidateContent'].keys()) > 0:
-                    aVariablesVal['DCTVARIABLE_EXCEPTION_FOUND'] = 'Y'
-                    cEmailSubject = f"Centrix Errors in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-                else:
-                    cEmailSubject = f"Centrix Success in {aVariablesVal['DCTVARIABLE_TEMPLATENAME']}"
-            
-            if oEmailTemplateList[0].get('cEmailBody'):
-                email_body = oEmailTemplateList[0]['cEmailBody']
-                # exception_found = aVariablesVal.get('DCTVARIABLE_EXCEPTION_FOUND')
-
-                if bExceptionfound == 'Y':
-                    eEditedEmailBody = re.sub(r'<!-- SUCCESSSTART -->[\s\S]*?<!-- SUCCESSEND -->', '', email_body)
-                elif bExceptionfound == 'N':
-                    eEditedEmailBody = re.sub(r'<!-- ERRORSTART -->[\s\S]*?<!-- ERROREND -->', '', email_body)
-                else:
-                    eEditedEmailBody = email_body
-                    
-            aEmailVariablesVal = {
-                "extra_subject": cEmailSubject,
-                "extra_to_emails": ",".join(sendToEmailArray),
-                "extra_cc_emails": ",".join(ccEmailArray),
-                "eEditedEmailBody": eEditedEmailBody
-            }
-
-            if oEmailTemplateList and len(oEmailTemplateList) > 0:
-                oEmailTemplateDetailList = oEmailTemplateList[0]
-                self.FunDCT_SendSMTPNotification(
-                    "MEMBER_UPLOAD",
-                    oEmailTemplateDetailList,
-                    aEmailVariablesVal,
-                    aVariablesVal,
-                    sendToEmailArray
-                )
-
+            self.oPyDB.tmpl_uploadlogs.find_one_and_update({'_id': ObjectId(
+                iTemplateUploadLogID)}, {'$set': {'bExceptionfound':bExceptionfound, 'bProcessed': bProcessed}}, new=True)
         except Exception as e:
-            LogService.log('Error : FunDCT_SendAdminMemberUploadDetails Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendAdminMemberUploadDetails Error while parsing file due to ' + str(e))
-
-
-    def FunDCT_SendConsolidateFile(self, cTemplateStatusFile, oTemplateDetails, oParams):
-        try:
-            oEmailTemplateList = []
-
-            if oTemplateDetails[0]["oTemplateMetaDataListing"].get("cEmailFrom", "").strip():
-                oEmailTemplateList = list(self.oPyDB.gen_emailtemplates.aggregate([
-                    {
-                        "$match": {
-                            "cFrom": oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailFrom"].strip()
-                        }
-                    },
-                    {
-                        "$lookup": {
-                            "from": "gen_processes",
-                            "localField": "iProcessID",
-                            "foreignField": "_id",
-                            "as": "oProcessListing"
-                        }
-                    },
-                    {"$unwind": "$oProcessListing"},
-                    {"$unwind": "$oProcessListing.cProcessCode"},
-                    {
-                        "$match": {
-                            "oProcessListing.cProcessCode": "CONSOLIDATE_TEMPLATE"
-                        }
-                    }
-                ]))
-
-            CONSOLIDATEFILE = f"{FRONTEND_URI}sessions/s3download?downloadpath={cTemplateStatusFile}"
-            sendToEmailArray = []
-            cUsername = oParams["oRequestedByUserDetails"].get("cUsername", "")
-            cEmail = oParams["oRequestedByUserDetails"].get("cEmail", "")
-            sendToEmailArray.append(cEmail)  # Add user's email to cTo array
-            aVariablesVal = {
-                "DCTVARIABLE_USERNAME": cUsername,
-                "DCTVARIABLE_FILE": CONSOLIDATEFILE,
-                "DCTVARIABLE_TEMPLATENAME": oTemplateDetails[0]["cTemplateName"],
-                "DCTVARIABLE_REQUEST_TYPE": oParams["cRequestType"]
-            }
-
-            if oEmailTemplateList and len(oEmailTemplateList) > 0:
-                oEmailTemplateDetailList = oEmailTemplateList[0]
-                self.FunDCT_SendSMTPNotification(
-                    "CONSOLIDATE_TEMPLATE",
-                    oEmailTemplateDetailList,
-                    oEmailTemplateDetailList["cEmailType"],
-                    aVariablesVal,
-                    sendToEmailArray
-                )
-
-        except Exception as e:
-            LogService.log('Error : FunDCT_SendConsolidateFile Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendConsolidateFile Error while parsing file due to ' + str(e))
-            
-    def FunDCT_SendMemberSubmissionFile(self, cTemplateStatusFile, oTemplateDetails, oParams):
-        try:
-            oEmailTemplateList = []
-
-            if oTemplateDetails[0]["oTemplateMetaDataListing"].get("cEmailFrom", "").strip():
-                oEmailTemplateList = list(self.oPyDB.gen_emailtemplates.aggregate([
-                    {
-                        "$match": {
-                            "cFrom": oTemplateDetails[0]["oTemplateMetaDataListing"]["cEmailFrom"].strip()
-                        }
-                    },
-                    {
-                        "$lookup": {
-                            "from": "gen_processes",
-                            "localField": "iProcessID",
-                            "foreignField": "_id",
-                            "as": "oProcessListing"
-                        }
-                    },
-                    {"$unwind": "$oProcessListing"},
-                    {"$unwind": "$oProcessListing.cProcessCode"},
-                    {
-                        "$match": {
-                            "oProcessListing.cProcessCode": "MEMBER_SUBMISSION_TEMPLATE"
-                        }
-                    }
-                ]))
-
-
-            CONSOLIDATEFILE = f"{FRONTEND_URI}sessions/s3download?downloadpath={cTemplateStatusFile}"
-            sendToEmailArray = []
-            cUsername = oParams["oRequestedByUserDetails"].get("cUsername", "")
-            cEmail = oParams["oRequestedByUserDetails"].get("cEmail", "")
-            sendToEmailArray.append(cEmail)  # Add user's email to cTo array
-            aVariablesVal = {
-                "DCTVARIABLE_USERNAME": cUsername,
-                "DCTVARIABLE_TEMPLATENAME": oTemplateDetails[0]["cTemplateName"],
-                "DCTVARIABLE_FILE": CONSOLIDATEFILE,
-            }
-
-            if oEmailTemplateList and len(oEmailTemplateList) > 0:
-                oEmailTemplateDetailList = oEmailTemplateList[0]
-                self.FunDCT_SendSMTPNotification(
-                    "CONSOLIDATE_TEMPLATE",
-                    oEmailTemplateDetailList,
-                    oEmailTemplateDetailList["cEmailType"],
-                    aVariablesVal,
-                    sendToEmailArray
-                )
-
-        except Exception as e:
-            LogService.log('Error : FunDCT_SendMemberSubmissionFile Error while parsing file due to ' + str(e))
-            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_SendMemberSubmissionFile Error while parsing file due to ' + str(e))
-
-
-      
-
+            LogService.log('Error : FunDCT_UpdateUploadlogExceptionfoundAndProcessed Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateUploadlogExceptionfoundAndProcessed Error while parsing file due to ' + str(e))  
 
                 
+    # def FunDCT_UpdateConsolidateTemplateStartprocessingAndProcesslock(self,_iTemplateConsolidationReqID, tProcessStart=None,bProcesslock='Y'):
+    #     try:
+    #         if tProcessStart is None: tProcessStart = datetime.now()
+    #         self.oPyDB.tmpl_consolidationreqs.find_one_and_update({'_id': ObjectId(
+    #             _iTemplateConsolidationReqID)}, {'$set': {'bProcesslock': bProcesslock,'tProcessStart':tProcessStart}}, new=True)
+    #     except Exception as e:
+    #         LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+    #         return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
             
 
+    def FunDCT_UpdateConsolidateTemplateEndprocessingAndProcesslock(self,_iTemplateConsolidationReqID, tProcessEnd=None,bProcesslock='N',bProcessed= 'Y'):
+        try:
+            if tProcessEnd is None: tProcessEnd = datetime.now()
+            self.oPyDB.tmpl_consolidationreqs.find_one_and_update({'_id': ObjectId(
+                _iTemplateConsolidationReqID)}, {'$set': {'bProcessed':bProcessed,'bProcesslock': bProcesslock,'tProcessEnd':tProcessEnd}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
 
 
+    def FunDCT_UpdateConsolidationReqsExceptionfoundAndProcessed(self,_iTemplateConsolidationReqID,tProcessEnd=None,bExceptionfound='Y',bProcessed='F',bProcesslock= 'N'):
+        try:
+            if tProcessEnd is None: tProcessEnd = datetime.now()
+            self.oPyDB.tmpl_consolidationreqs.find_one_and_update({'_id': ObjectId(
+                _iTemplateConsolidationReqID)}, {'$set': {'bExceptionfound':bExceptionfound, 'bProcessed': bProcessed ,'bProcesslock':bProcesslock, 'tProcessEnd':tProcessEnd , 'tUpdated':tProcessEnd}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateConsolidationReqsExceptionfoundAndProcessed Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidationReqsExceptionfoundAndProcessed Error while parsing file due to ' + str(e)) 
+
+
+
+
+    def FunDCT_UpdateMemberSubmissionlogsStartprocessingAndProcesslock(self,_iTemplateMemberSubmissionID, tProcessStart=None,bProcesslock='Y'):
+        try:
+            if tProcessStart is None: tProcessStart = datetime.now()
+            self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one_and_update({'_id': ObjectId(
+                _iTemplateMemberSubmissionID)}, {'$set': {'bProcesslock': bProcesslock,'tProcessStart':tProcessStart , 'tUpdated':tProcessStart}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateMemberSubmissionlogsStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateMemberSubmissionlogsStartprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            
+
+    def FunDCT_UpdateMemberSubmissionlogsEndprocessingAndProcesslock(self,_iTemplateMemberSubmissionID, tProcessEnd=None,bProcesslock='N',bProcessed= 'Y'):
+        try:
+            if tProcessEnd is None: tProcessEnd = datetime.now()
+            self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one_and_update({'_id': ObjectId(
+                _iTemplateMemberSubmissionID)}, {'$set': {'bProcessed':bProcessed,'bProcesslock': bProcesslock,'tProcessEnd':tProcessEnd , 'tUpdated':tProcessEnd}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateMemberSubmissionlogsEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateMemberSubmissionlogsEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+
+
+    def FunDCT_UpdateMemberSubmissionlogsExceptionfoundAndProcessed(self,_iTemplateMemberSubmissionID,tProcessEnd=None,bProcessed='F',bProcesslock= 'N'):
+        try:
+            if tProcessEnd is None: tProcessEnd = datetime.now()
+            self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one_and_update({'_id': ObjectId(
+                _iTemplateMemberSubmissionID)}, {'$set': {'bProcessed': bProcessed ,'bProcesslock':bProcesslock, 'tProcessEnd':tProcessEnd , 'tUpdated':tProcessEnd}}, new=True)
+        except Exception as e:
+            LogService.log('Error : FunDCT_UpdateMemberSubmissionlogsExceptionfoundAndProcessed Error while parsing file due to ' + str(e))
+            return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateMemberSubmissionlogsExceptionfoundAndProcessed Error while parsing file due to ' + str(e))
+
+
+    def getTmplConsolidationReqDetails(self,iStatusID, id):
+            try:
+                return self.oPyDB.tmpl_consolidationreqs.find_one({'iStatusID': iStatusID,'_id': ObjectId(id)})
+            except Exception as e:
+                LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+                return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e)) 
+
+
+
+    def FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock(self,_iTemplateConsolidationReqID, aRequestDetails):
+            try:
+                self.oPyDB.tmpl_consolidationreqs.find_one_and_update({'_id': ObjectId(
+                    _iTemplateConsolidationReqID)}, {'$set': aRequestDetails}, new=True)
+            except Exception as e:
+                LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+                return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+            
+
+    def getTmplMembersubmissionReqDetails(self,iStatusID, id):
+            try:
+                return self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one({'iStatusID': iStatusID,'_id': ObjectId(id)})
+            except Exception as e:
+                LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+                return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e)) 
+
+
+    def FunDCT_UpdateMemberSubmissionStartOrEndprocessingAndProcesslock(self,_iTemplateMemberSubmissionID, aRequestDetails):
+            try:
+                self.oPyDB.tmpl_membersubmissiondownloadlogs.find_one_and_update({'_id': ObjectId(
+                    _iTemplateMemberSubmissionID)}, {'$set': aRequestDetails}, new=True)
+            except Exception as e:
+                LogService.log('Error : FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))
+                return ConfigurationMessageHandling.FunDCT_ConfigurationMessageHandling('Error', 'FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock Error while parsing file due to ' + str(e))

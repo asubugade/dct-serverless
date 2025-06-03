@@ -1,4 +1,5 @@
 import { ClsDCT_Common } from "../../commonModule/Class.common";
+import { ClsDCT_ManageTemplate } from "../../commonModule/Class.managetemplate";
 import Status, { IStatus } from "../../models/GenStatus";
 import Template from "../../models/GenTemplate";
 import TemplateType, { ITemplateType } from "../../models/GenTemplateType";
@@ -11,7 +12,8 @@ import HttpStatusCodes from "http-status-codes";
 export class ConsolidateTemplateService {
 
     private _oCommonCls = new ClsDCT_Common();
-
+    private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
+    
     public consolidationLogListing = async (event) => {
         try {
             const { iOffset, iLimit, iOffsetLimit, cSearchFilter, cSort, cSortOrder, cTemplateTypes } = JSON.parse(event.body);
@@ -180,7 +182,7 @@ export class ConsolidateTemplateService {
     }
 
     public consolidateTemplate = async (event) => {
-        try {
+        try {        
             const { iTemplateID, cRequestType, IsAlreadyRequested } = JSON.parse(event.body);
             let oStatus;
             try {
@@ -195,11 +197,13 @@ export class ConsolidateTemplateService {
                 IsAlreadyRequested: IsAlreadyRequested,
             }
 
-            const oTemplateDetails = await this._oCommonCls.FunDCT_GetTemplateDetails(iTemplateID);
+            const oTemplateDetails = await this._oCommonCls.FunDCT_GetTemplateDetails(iTemplateID);    
             const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, bProcesslock: 'N', iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cRequestType, IsConsolidationRequested };
             let oTemplates = new TmplConsolidationReq(aRequestDetails);
-            await oTemplates.save();
-            return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CONSOLIDATE_TEMPLATE', 'CONSOLIDATE_REQUEST_SUBMITTED', 200, oTemplates);
+            const tmplConsolidationDetail =  await oTemplates.save();
+            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(oTemplateDetails[0].cTemplateType, event.requestContext.authorizer._id, tmplConsolidationDetail , "Consolidate")
+
+            return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CONSOLIDATE_TEMPLATE', 'CONSOLIDATE_REQUEST_SUBMITTED', 200, "oTemplates");
         } catch (err) {
             return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err.message);
 

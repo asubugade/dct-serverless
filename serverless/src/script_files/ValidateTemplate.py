@@ -41,16 +41,21 @@ from pyconfig.model_common import model_common_Cls
 from pyconfig.LogService import LogService
 import prefillNomemberupload
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+model_common = model_common_Cls()
 
 # Explore Parameteres
 aGlobalParameters = defaultdict(dict)
-oPostParameters = json.loads(sys.argv[1])
-# with open(r'c:\vartemp\Distribute_Release1111.txt','w') as f:
-# with open(r'c:\vartemp\Member_Upload.txt','w') as f:
-#     f.write(str(sys.argv[1]))
-# with open(r'c:\vartemp\Distribute_Release33.txt','w') as f:
-#     f.write(str(sys.argv[1]))    
-# with open(r'c:\vartemp\Distribute_Release33.txt','r') as f:
+id_schedule =str(sys.argv[1])
+# id_schedule = '68386b8aabc4a17f01d18439'
+sch_data =  model_common.get_LaneScheduleById(id_schedule)
+if not sch_data :
+    LogService.log('No Scheule id found , system exit')
+    sys.exit()
+oPostParameters = sch_data.get('jDump')
+# oPostParameters = json.loads(sys.argv[1])
+# with open(r'c:\vartemp\Distribute_Release1.txt','w') as f:
+#     f.write(str(sch_data))
+# with open(r'c:\vartemp\Distribute_Release.txt','r') as f:
 #     oPostParameters = json.loads(f.read())    
 # with open(r'c:\vartemp\Member_Upload.txt','r') as f:
 #     oPostParameters = json.loads(f.read())
@@ -100,7 +105,7 @@ _cValidatedExcelToJSONSuccessFile = oPostParameters['_cValidatedExcelToJSONSucce
     # oValidationsDetails = json.load(oValidationsDetails)
 model_common = model_common_Cls()
 MessageHandling = MessageHandling()
-
+model_common.FunDCT_UpdateTemplateStartprocessingAndProcesslock(_iTemplateUploadLogID) if _cUploadType == 'DISTRIBUTE' else model_common.FunDCT_UpdateMemberStartprocessingAndProcesslock(_iTemplateUploadLogID)
 if iTemplateID:
     oValidationsDetails = model_common.FunDCT_GET_HEADER_VALIDATIONonlyChild(iTemplateID)
     
@@ -117,6 +122,7 @@ cValidatePattern = ''
 cKey = ''
 cNewkeytype = ''
 cNewval = ''
+model_common = model_common_Cls()
 cSampleFile = Path(cSampleFullFilePath)
 LogService.log(f'cSampleFile =={cSampleFile}')
 LogService.log(f'cSampleFile.is_file() =={cSampleFile.is_file()}')
@@ -222,7 +228,7 @@ if str(oPostParameters['preFillData']).strip().lower() == 'yes'.lower():
     oPostParameters['oWorkbookTemplate'] = oWorkbookTemplate
     oPostParameters['oSheetTemplate'] = oSheetTemplate
     
-
+    awsCloudFileManager.download_file_from_bucket(str(loadConfig.AWS_BUCKET), oPostParameters['cFullFilePath'], oPostParameters['cFullFilePath'])
     # print(f'{MemoryService.getMemoryUsedStr()}- uploaded file membero loadss')
     oWorkbookUploaded = pandas.ExcelFile(oPostParameters['cFullFilePath'],'openpyxl')
     oWtem = load_workbook(oPostParameters['cFullFilePath'],read_only=True)
@@ -876,8 +882,13 @@ def FunDCT_SplitFiles(oPostParameters,cS3DirStatusFile):
         cS3UrlFileError = awsCloudFileManager.upload_file_to_bucket(str(loadConfig.AWS_BUCKET), str(cS3DirStatusFile), str(errorFilePathL))
         cS3UrlFileSuccess = awsCloudFileManager.upload_file_to_bucket(str(loadConfig.AWS_BUCKET), str(cS3DirStatusFile), str(successFilePathL))
         model_common.FunDCT_UpdateSuccessErrorFilePath(oPostParameters['_iTemplateUploadLogID'],cS3UrlFileSuccess,cS3UrlFileError)
-        os.remove(errorFilePathL)
-        os.remove(successFilePathL)
+        if os.path.commonprefix((os.path.realpath(errorFilePathL),loadConfig.HOME_DIR)) != loadConfig.HOME_DIR:
+            os.remove(errorFilePathL)
+        if os.path.commonprefix((os.path.realpath(successFilePathL),loadConfig.HOME_DIR)) != loadConfig.HOME_DIR:
+            os.remove(successFilePathL)
+        if os.path.commonprefix((os.path.realpath(oPostParameters['cFullFilePath']),loadConfig.HOME_DIR)) != loadConfig.HOME_DIR:
+            os.remove(oPostParameters['cFullFilePath'])
+        
     except Exception as Err:
         LogService.log(f'FunDCT_SplitFiles {Err}')
 
@@ -1208,7 +1219,9 @@ def FunDCT_ValidateTemplate(oPostParameters):
             # Distribution and Consolidation
             LogService.log('Distribution and consolidation file Creating strated')
             aSelectedMembers = defaultdict(dict)
-            oPostParameters['cFileToCompare'] = cDirValidateTemplateStatusFile + 'SUCCESS_ERROR_' + _iTemplateUploadLogID + oPostParameters['iTemplateID'] + str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) + ".xlsx"
+            # oPostParameters['cFileToCompare'] = cDirValidateTemplateStatusFile + 'SUCCESS_ERROR_' + _iTemplateUploadLogID + oPostParameters['iTemplateID'] + str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) + ".xlsx"
+            oPostParameters['cFileToCompare'] = (cDirValidateTemplateStatusFile + 'SUCCESS_ERROR_' + str(_iTemplateUploadLogID) + str(oPostParameters['iTemplateID']) + oNow.strftime("%Y-%m-%d-%H-%M-%S") + ".xlsx")
+
             copyfile(oPostParameters['cStatusFileFullFilePath'], oPostParameters['cFileToCompare'])
             if len(oSheetStatusFileDATA) <= 0 and _cUploadType == 'DISTRIBUTE':
                 aSelectedMembers = Distribution.FunDCT_DistributionAndConsolidation(oPostParameters['_cCompanyname'], oPostParameters['cDirDistribution'], succussFilePath, oPostParameters['_cUploadType'], oSheetUploaded, _iTemplateUploadLogID, cDirValidateTemplateStatusFile, oPostParameters['iTemplateID'], cDirConsolidation, iMaxDepthHeaders, aValidateContent, cS3DirStatusFile, oPostParameters['cFullFilePath'], oPostParameters['cTemplateType'])
@@ -1216,7 +1229,10 @@ def FunDCT_ValidateTemplate(oPostParameters):
                 if len(oSheetStatusFileDATASuccess) > 0:
                        aSelectedMembers = Distribution.FunDCT_DistributionAndConsolidation(oPostParameters['_cCompanyname'], oPostParameters['cDirDistribution'], succussFilePath, oPostParameters['_cUploadType'], oSheetUploaded, _iTemplateUploadLogID, cDirValidateTemplateStatusFile, oPostParameters['iTemplateID'], cDirConsolidation, iMaxDepthHeaders, aValidateContent, cS3DirStatusFile, oPostParameters['cFullFilePath'], oPostParameters['cTemplateType'])
             if len(aValidateContent) > 0 and _cUploadType == 'DISTRIBUTE':
+                model_common.FunDCT_UpdateUploadlogExceptionfoundAndProcessed(_iTemplateUploadLogID, 'Y', 'N')
                 model_common.FunDCT_ResetMappingColumnDetails(iTemplateID)
+            elif len(aValidateContent) == 0 and _cUploadType == 'DISTRIBUTE':
+                model_common.FunDCT_UpdateUploadlogExceptionfoundAndProcessed(_iTemplateUploadLogID, 'N', 'Y')
             LogService.log('Distribution and consolidation file Creating Ended')
             
             # if _cUploadType != 'DISTRIBUTE':
@@ -1249,77 +1265,19 @@ def FunDCT_ValidateTemplate(oPostParameters):
             "iErrorLenth": len(aValidateContent),
             "cDistributionDetails": aSelectedMembers,
         }
-        if oPostParameters["preFillData"] == "yes" or oPostParameters['_cUploadType'] != "DISTRIBUTE":
-            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
-            oTemplateMetaData = model_common.FunDCT_findMetadataByTemplateID(iTemplateID)
-            bExceptionfound = 'Y' if aValidateResponse["iErrorLenth"] > 0 else 'N'
-            
-            if _cUploadType == 'DISTRIBUTE':
-                aTmplUploadLogFields = {
-                    "bExceptionfound": bExceptionfound,
-                    "bProcesslock": "N",
-                    "bProcessed": "Y",
-                    "cTemplateFile": aValidateResponse["cFullPath"],
-                    "cDistributionDetails": aValidateResponse["cDistributionDetails"],
-                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
-                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
-                    "tProcessEnd": datetime.now(),
-                    "tUpdated": datetime.now(),
-                    "iMaxDepthHeaders": iMaxDepthHeaders
-                }
-                oUpdateUploadLog = model_common.FunDCT_UpdateDistributeTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
-            else:
-                aTmplUploadLogFields = {
-                    "bProcesslock": "N",
-                    "bProcessed": "Y",
-                    "cTemplateFile": aValidateResponse["cFullPath"],
-                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
-                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
-                    "tProcessEnd": datetime.utcnow(),
-                    "tUpdated": datetime.utcnow(),
-                }
-                oUpdateUploadLog = model_common.FunDCT_UpdateMemberTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
-
-            if bExceptionfound == 'N':
-                metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
-                aRequestDetail = {"iRedistributedIsUploaded": "0"}
-                oStatData = model_common.FunDCT_findByIDAndUpdateMetadata(metadataID,aRequestDetail)
-                oTemplateDetails[0]["oTemplateMetaDataListing"] = oStatData
-
-                if _cUploadType == 'DISTRIBUTE':
-                    oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
-                    oTemplateDetails = model_common.FunDCT_SendDistributionDetails(aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
-                    
-            if _cUploadType == 'MEMBER_UPLOAD' or _cUploadType == 'MEMBER_ADMIN_UPLOAD':
-                oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
-                oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
-                    
-            # elif _cUploadType == 'MEMBER_ADMIN_UPLOAD':
-            #     oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
-            #     oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
-                    
-            # elif bExceptionfound == 'Y' and _cUploadType != 'DISTRIBUTE':
-            #     metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
-                    
-                
         LogService.log(f'Validation Response == {aValidateResponse}')
         LogService.log(f'Writing to file {cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile}')
         with open(cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile, "w") as oFilePointer:
             json.dump(aValidateResponse , oFilePointer)
         LogService.log('Job done successfully, now sending success response to Node')
         LogService.log('Marking Job done in DB')
-        model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
+        model_common.FunDCT_UpdateTemplateEndprocessingAndProcesslock(_iTemplateUploadLogID) if _cUploadType == 'DISTRIBUTE' else model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
+
+        # model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
         LogService.log('Marked Job done in DB')
         return MessageHandling.FunDCT_MessageHandling('Success', _cValidatedExcelToJSONSuccessFile)
     except Exception as e:
         LogService.log('Error FunDCT_ValidateTemplate Error while parsing file due to ' + str(e))
-
-        if _cUploadType == "DISTRIBUTE":
-            oTemplateDetails = model_common.FunDCT_UpdateExceptionTemplateLogsData('tmpl_uploadlogs', oPostParameters)
-
-        if _cUploadType != "DISTRIBUTE":
-            oTemplateDetails = model_common.FunDCT_UpdateExceptionTemplateLogsData('mem_uploadlogs', oPostParameters)
-
         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_ValidateTemplate Error while parsing file due to ' + str(e))
 
 

@@ -13,7 +13,7 @@ import signal
 from pathlib import Path
 executor = None
 model_common_Cls = model_common_Cls()
-pythonscriptpath = str(Path(__file__).parent) + '/'
+pythonscriptpath = str(Path(__file__).parent) + "\\"
 processs = {
     'TemplateUpload': f'{pythonscriptpath}ValidateTemplate.py',
     'Consolidate': f'{pythonscriptpath}ConsolidateTemplate.py',
@@ -29,16 +29,17 @@ def fileprocess(iTemplateTypeid, cProcessType,lid):
             scriptPath = processs.get(cProcessType)
             if scriptPath and laneitem:
                 jDump = laneitem.get('jDump')
-                id_sch = laneitem.get('_id')
-                cmdList = ['Python' , scriptPath, jDump]
+                id_sch = str(laneitem.get('_id'))
+                cmdList = ['Python' , scriptPath, id_sch]
                 cmd = ' '.join(cmdList)
+                print(f"Command to execute: {cmd}")
                 model_common_Cls.delete_LaneSchedulebyID(id_sch)
                 model_common_Cls.update_LaneIncremental(lid)
                 # Run the external Python script with parameters
                 try:
                     subprocess.run(cmd, start_new_session=True,shell=True,text=True,capture_output=False)
                     model_common_Cls.update_LaneDecremental(lid)
-                    print(f"Executed {scriptPath} with params: {jDump}")
+                    print(f"Executed {scriptPath} with schedule id: {id_sch}")
                     
                 except subprocess.CalledProcessError as e:
                     print(f"Error executing script: {e}")

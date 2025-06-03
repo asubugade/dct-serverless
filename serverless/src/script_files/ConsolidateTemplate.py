@@ -42,15 +42,21 @@ import prefillNomemberupload
 from shutil import copyfile
 import glob
 
-from bson import ObjectId
-
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.insert(0, os.path.abspath(__file__))
+id_schedule = str(sys.argv[1])
+# id_schedule='68386b8aabc4a17f01d18439'
+model_common = model_common_Cls()
+sch_data =  model_common.get_LaneScheduleById(id_schedule)
+if not sch_data :
+    LogService.log('No Scheule id found , system exit')
+    sys.exit()
+oPostParameters = sch_data.get('jDump')
 
 # Explore Parameteres
-oPostParameters = json.loads(sys.argv[1])
+# oPostParameters = json.loads(sys.argv[1])
 # with open(r'c:\vartemp\consolidate.txt','w') as f:
 #     f.write(str(sys.argv[1]))
 # with open(r'c:\vartemp\consolidate.txt','r') as f:
@@ -58,13 +64,13 @@ oPostParameters = json.loads(sys.argv[1])
 # with open(r'c:\vartemp\consolidate_CASE_Compenent_missMatch1.txt','r') as f:
 #     oPostParameters = json.loads(f.read())
 iTemplateID = oPostParameters['iTemplateID']
-model_common = model_common_Cls()
 MessageHandling = MessageHandling()
 oDataFrameList = model_common.FunDCT_GetTemplateLog('gen_templates',iTemplateID)
 cTemplateType = oDataFrameList[0]['cTemplateType']
 cFileDir = oPostParameters['cDirFile']
 cFileType = '.xlsx'
 cRequestType = oPostParameters['cRequestType'] # Either ALL / MEMEBER
+_iTemplateConsolidationReqID = oPostParameters['_iTemplateConsolidationReqID']
 aUnMappedColumnLabels = defaultdict(dict)
 aUnMappedColumnRange = defaultdict(dict)
 aUnMappedColumnRangeDetails = defaultdict(dict)
@@ -85,9 +91,14 @@ oSheetTemplate = oWorkbookTemplate.active
 iMaxRowTemplate = oSheetTemplate.max_row
 iMaxColumnTemplate = oSheetTemplate.max_column
 
-
 aHeaderDetails = model_common.FunDCT_GET_HEADER_VALIDATION(iTemplateID)
 validations = model_common.FunDCT_GET_HEADER_VALIDATIONonlyChild(iTemplateID)
+startProcessRequestDetails = {
+                "bProcesslock": "Y",
+                "tProcessStart": datetime.now(),
+                "tUpdated": datetime.now()
+            }
+model_common.FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock(_iTemplateConsolidationReqID, startProcessRequestDetails)
 # added this for single header level
 if not validations: validations = aHeaderDetails
 aGetMemberColumns = model_common.FunDCT_GetMemberScacValidationCol(iTemplateID)
@@ -519,7 +530,9 @@ def FunDCT_LoadJsonByObjectKey(s3objKey):
             iIndexDataFrame = iter(range(1, len(odataframe.columns) + 1))
             odataframe.columns = [cColumns if not cColumns.startswith('Unnamed') else '#DCT#' + str(next(iIndexDataFrame)) for cColumns in odataframe.columns]
             jData = odataframe.to_json()
-            if os.path.exists(cTempfilePath): os.remove(cTempfilePath)
+            if os.path.exists(cTempfilePath):
+                if os.path.commonprefix((os.path.realpath(cTempfilePath),loadConfig.HOME_DIR)) != loadConfig.HOME_DIR:
+                    os.remove(cTempfilePath)
         else:
 
             oData = awsCloudFileManager.download_data_from_bucket(loadConfig.AWS_BUCKET,s3objKey)
@@ -768,34 +781,27 @@ def FunDCT_MergeAllTemplateFile():
             cS3DirUploadFile = ''
             cS3DirUploadFile = str(loadConfig.AWS_BUCKET_ENV) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES) + '/' + str(loadConfig.AWS_BUCKET_TEMPLATES_CONSOLIDATION) + '/'
             cS3UrlUploadedOrg = awsCloudFileManager.upload_file_to_bucket(str(loadConfig.AWS_BUCKET), str(cS3DirUploadFile), cConsolidateTemplateFileName)
-        
             oStatusDetails = model_common.statusActive[0]
             iStatusID = oStatusDetails.get('_id')
-            pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
-            existing_data = model_common.FunDCT_GetPendingConsolidationData(iStatusID,pending_consl_req_id)
-            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+            existing_data = model_common.getTmplConsolidationReqDetails(iStatusID,_iTemplateConsolidationReqID)
+            is_consolidation_requested = {
+                    'cRequestType': existing_data['IsConsolidationRequested']['cRequestType'],
+                    'iEnteredby': existing_data['IsConsolidationRequested']['iEnteredby'],
+                    'iTemplateID': existing_data['IsConsolidationRequested']['iTemplateID'],
+                    'IsAlreadyRequested': False
+                }
 
-            IsConsolidationRequested = {
-                "cRequestType": is_consolidation.get("cRequestType", ""),
-                "iEnteredby": is_consolidation.get("iEnteredby", 0),
-                "iTemplateID": is_consolidation.get("iTemplateID", 0),
-                "IsAlreadyRequested": False
+            # Prepare the final request details
+            a_request_details = {
+                'cTemplateStatusFile' : cS3UrlUploadedOrg,
+                'IsConsolidationRequested': is_consolidation_requested,
+                'bProcesslock': 'N',
+                'bProcessed': 'Y',
+                'tProcessEnd': datetime.now(),
+                'tUpdated': datetime.now()
             }
-            aRequestDetails = {
-                "cTemplateStatusFile": cS3UrlUploadedOrg,
-                "IsConsolidationRequested": IsConsolidationRequested,
-                "bProcesslock": "N",
-                "bProcessed": "Y",
-                "tProcessEnd": datetime.utcnow(),
-                "tUpdated": datetime.utcnow()
-            }
-
-            model_common.FunDCT_UpdateConsolidationData(iStatusID,pending_consl_req_id,aRequestDetails)
-
-            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
-            model_common.FunDCT_SendConsolidateFile(cS3UrlUploadedOrg, oTemplateDetails, oPostParameters)
-
-            return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
+            model_common.FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock(_iTemplateConsolidationReqID , a_request_details)
+            # return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
         else:
             iMaxDepthHeaders = model_common.FunDCT_GetMaxDepthHeader(iTemplateID)
             oPostParameters['iMaxDepthHeaders']=iMaxDepthHeaders
@@ -803,32 +809,32 @@ def FunDCT_MergeAllTemplateFile():
             prefillNomemberupload.PreFilledDataConsolidation(oPostParameters)
 
     except Exception as e:
-        
+        ###failure loack n
         oStatusDetails = model_common.statusActive[0]
         iStatusID = oStatusDetails.get('_id')
-        pending_consl_req_id = ObjectId(oPostParameters.get('oPendingConslReq', ''))
-        existing_data = model_common.FunDCT_GetPendingConsolidationData(iStatusID,pending_consl_req_id)
-        is_consolidation = existing_data.get("IsConsolidationRequested", {})
-        IsConsolidationRequested = {
-            "cRequestType": is_consolidation.get("cRequestType", ""),
-            "iEnteredby": is_consolidation.get("iEnteredby", 0),
-            "iTemplateID": is_consolidation.get("iTemplateID", 0),
-            "IsAlreadyRequested": False
-        }
-        aRequestDetails = {
-            "IsConsolidationRequested": IsConsolidationRequested,
-			"bExceptionfound": 'Y',
-            "bProcesslock": "N",
-            "bProcessed": "F",
-            "tProcessEnd": datetime.utcnow(),
-            "tUpdated": datetime.utcnow()
-        }
-        model_common.FunDCT_UpdateConsolidationData(iStatusID,pending_consl_req_id,aRequestDetails)
-        
+        existing_data = model_common.getTmplConsolidationReqDetails(iStatusID,_iTemplateConsolidationReqID)
+        is_consolidation_requested = {
+                    'cRequestType': existing_data['IsConsolidationRequested']['cRequestType'],
+                    'iEnteredby': existing_data['IsConsolidationRequested']['iEnteredby'],
+                    'iTemplateID': existing_data['IsConsolidationRequested']['iTemplateID'],
+                    'IsAlreadyRequested': False
+                }
+
+        # Prepare the final request details
+        a_request_details = {
+                'IsConsolidationRequested': is_consolidation_requested,
+                'bExceptionfound':'Y',
+                'bProcesslock': 'N',
+                'bProcessed': 'F',
+                'tProcessEnd': datetime.now(),
+                'tUpdated': datetime.now()
+            }
+        model_common.FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock(_iTemplateConsolidationReqID , a_request_details) 
+        # model_common.FunDCT_UpdateConsolidationReqsExceptionfoundAndProcessed(_iTemplateConsolidationReqID)
         trace_back = sys.exc_info()[2]
         line = trace_back.tb_lineno
         LogService.log('Error : FunDCT_MergeAllTemplateFile Error while parsing file due to ' + str(e) + 'Line no - '+ str(line))
-        return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_MergeAllTemplateFile Error while parsing file due to ' + str(e) + 'Line no - '+ str(line))
+        # return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_MergeAllTemplateFile Error while parsing file due to ' + str(e) + 'Line no - '+ str(line))
 
 def FunDCT_Percentage(oWorksheet):
     percentage_columns = [] 

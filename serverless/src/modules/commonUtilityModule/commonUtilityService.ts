@@ -248,9 +248,9 @@ export class CommonUtilityService {
             }
             let objRes = await this._oCommonCls.FunDCT_exportDetails(JSON.stringify(cSearchFilterQuery), oSort, event, cTemplateTypes ? cTemplateTypes : []);
             if (objRes.cStatus == 'Success') {
-                let oJSONRes = {
-                    aModuleDetails: objRes
-                };
+                // let oJSONRes = {
+                //     aModuleDetails: objRes
+                // };
                 return {
                     statusCode: 200,
                     headers: {
@@ -262,7 +262,14 @@ export class CommonUtilityService {
                 let oJSONRes = {
                     aModuleDetails: objRes
                 };
-                return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CREATE_TEMPLATE', 'EXCELTOJSON_UNSUCESS', 200, oJSONRes);
+                return {
+                    statusCode: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(objRes),
+                };
+                // return await this._oCommonCls.FunDCT_Handleresponse('Success', 'CREATE_TEMPLATE', 'EXCELTOJSON_UNSUCESS', 200, oJSONRes);
             }
         } catch (err) {
             return await this._oCommonCls.FunDCT_Handleresponse('Error', 'APPLICATION', 'SERVER_ERROR', HttpStatusCodes.BAD_REQUEST, err);

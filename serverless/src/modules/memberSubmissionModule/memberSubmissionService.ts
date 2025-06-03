@@ -1,4 +1,5 @@
 import { ClsDCT_Common } from "../../commonModule/Class.common";
+import { ClsDCT_ManageTemplate } from "../../commonModule/Class.managetemplate";
 import Status, { IStatus } from "../../models/GenStatus";
 import Template from "../../models/GenTemplate";
 import TemplateType, { ITemplateType } from "../../models/GenTemplateType";
@@ -12,7 +13,7 @@ import HttpStatusCodes from "http-status-codes";
 
 export class MemberSubmissionService {
     private _oCommonCls = new ClsDCT_Common();
-
+    private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
     public memberSubmissionLogListing = async (event) => {
         try {
             const { iOffset, iLimit, iOffsetLimit, cSearchFilter, cSort, cSortOrder, cTemplateTypes } = JSON.parse(event.body);
@@ -204,7 +205,8 @@ export class MemberSubmissionService {
 
             const aRequestDetails = { iTemplateID: iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, bProcesslock: 'N', iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), aMemberScacCode, IsConsolidationRequested };
             let oTemplates = new MemberSubmissionDownloadLog(aRequestDetails);
-            await oTemplates.save();
+            const memberConsolidationDetail = await oTemplates.save();
+            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(oTemplateDetails[0].cTemplateType, event.requestContext.authorizer._id, memberConsolidationDetail , "MemberSubConsolidate")
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'MEMBER_SUBMISSION_TEMPLATE', 'MEMBER_SUBMISSION_REQUEST_SUBMITTED', 200, oTemplates);
 
         } catch (err) {
