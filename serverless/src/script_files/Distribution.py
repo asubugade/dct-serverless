@@ -61,9 +61,7 @@ def FunDCT_DistributionAndConsolidation(_cCompanyname, cDirDistribution, cStatus
             aGetSelectedMembers = model_common.FunDCT_GetMembersForDistribution(_iTemplateUploadLogID, _cUploadType)
             if _cUploadType != 'DISTRIBUTE':
                 # oWorkbookMemberDistribute = openpyxl.Workbook()
-                cMemberDistributionFilePath = cDirValidateTemplateStatusFile + aGetSelectedMembers + \
-                    '_' + iTemplateID + '_' + \
-                    str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) + '.xlsx'
+                cMemberDistributionFilePath = cDirValidateTemplateStatusFile + aGetSelectedMembers +'_' + str(iTemplateID) + '_' + str(oNow.strftime("%Y-%m-%d-%H-%M-%S")) + '.xlsx'
                 # oWorkbookMemberDistribute.save(cMemberDistributionFilePath)
                 # FunDCT_CopyUploadedFile(cMemberDistributionFilePath, oSheetUploaded)
                 copyfile(cFullFilePath, cMemberDistributionFilePath)

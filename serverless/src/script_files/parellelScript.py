@@ -33,7 +33,7 @@ def fileprocess(iTemplateTypeid, cProcessType,lid):
                 cmdList = ['Python' , scriptPath, id_sch]
                 cmd = ' '.join(cmdList)
                 print(f"Command to execute: {cmd}")
-                model_common_Cls.delete_LaneSchedulebyID(id_sch)
+                # model_common_Cls.delete_LaneSchedulebyID(id_sch)
                 model_common_Cls.update_LaneIncremental(lid)
                 # Run the external Python script with parameters
                 try:

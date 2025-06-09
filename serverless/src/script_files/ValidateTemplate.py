@@ -46,7 +46,7 @@ model_common = model_common_Cls()
 # Explore Parameteres
 aGlobalParameters = defaultdict(dict)
 id_schedule =str(sys.argv[1])
-# id_schedule = '68386b8aabc4a17f01d18439'
+# id_schedule = '68428b958eb41e74517cdf19'
 sch_data =  model_common.get_LaneScheduleById(id_schedule)
 if not sch_data :
     LogService.log('No Scheule id found , system exit')
@@ -337,7 +337,7 @@ if oPostParameters['_cUploadType'] != 'DISTRIBUTE' and str(oPostParameters['preF
     for ii, row in enumerate(ws.iter_rows(values_only=False), start=1):
         formatted_row = []
         for cell in row:
-            if '%' in cell.number_format :  # Check if the cell is formatted as a percentage
+            if cell.number_format and '%' in cell.number_format:  # Check if the cell is formatted as a percentage
                 formatted_value = f"{round(cell.value * 100, 2)}%"  # Convert 0.3 to '30%'
             elif cell.data_type == 'd':
                 dateFormat = convert_excel_date_format_to_python(cell.number_format)
@@ -1265,13 +1265,65 @@ def FunDCT_ValidateTemplate(oPostParameters):
             "iErrorLenth": len(aValidateContent),
             "cDistributionDetails": aSelectedMembers,
         }
+        if oPostParameters["preFillData"] == "yes" or oPostParameters['_cUploadType'] != "DISTRIBUTE":
+            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
+            oTemplateMetaData = model_common.FunDCT_findMetadataByTemplateID(iTemplateID)
+            bExceptionfound = 'Y' if aValidateResponse["iErrorLenth"] > 0 else 'N'
+            
+            if _cUploadType == 'DISTRIBUTE':
+                aTmplUploadLogFields = {
+                    "bExceptionfound": bExceptionfound,
+                    "bProcesslock": "N",
+                    "bProcessed": "Y",
+                    "cTemplateFile": aValidateResponse["cFullPath"],
+                    "cDistributionDetails": aValidateResponse["cDistributionDetails"],
+                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
+                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
+                    "tProcessEnd": datetime.now(),
+                    "tUpdated": datetime.now(),
+                    "iMaxDepthHeaders": iMaxDepthHeaders
+                }
+                oUpdateUploadLog = model_common.FunDCT_UpdateDistributeTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
+            else:
+                aTmplUploadLogFields = {
+                    "bExceptionfound": bExceptionfound,
+                    "bProcesslock": "N",
+                    "bProcessed": "Y",
+                    "cTemplateFile": aValidateResponse["cFullPath"],
+                    "cTemplateStatusFile": aValidateResponse["cStatusFilePath"],
+                    "iUpdatedby": oPostParameters["oRequestedByUserDetails"].get("_id", "0001"),
+                    "tProcessEnd": datetime.utcnow(),
+                    "tUpdated": datetime.utcnow(),
+                }
+                oUpdateUploadLog = model_common.FunDCT_UpdateMemberTemplateUploadLog( bExceptionfound, aValidateResponse, cDirValidateTemplateStatusFile, aTmplUploadLogFields, _iTemplateUploadLogID )
+
+            if bExceptionfound == 'N':
+                metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
+                aRequestDetail = {"iRedistributedIsUploaded": "0"}
+                oStatData = model_common.FunDCT_findByIDAndUpdateMetadata(metadataID,aRequestDetail)
+                oTemplateDetails[0]["oTemplateMetaDataListing"] = oStatData
+
+                if _cUploadType == 'DISTRIBUTE':
+                    oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+                    oTemplateDetails = model_common.FunDCT_SendDistributionDetails(aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            if _cUploadType == 'MEMBER_UPLOAD' or _cUploadType == 'MEMBER_ADMIN_UPLOAD':
+                oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+                oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            # elif _cUploadType == 'MEMBER_ADMIN_UPLOAD':
+            #     oResPyProg = 'Success', _cValidatedExcelToJSONSuccessFile
+            #     oTemplateDetails = model_common.FunDCT_SendMemberUploadDetails(oUpdateUploadLog, aValidateResponse, oTemplateDetails, oResPyProg, cDirValidateTemplateStatusFile, oTemplateMetaData, oPostParameters)
+                    
+            # elif bExceptionfound == 'Y' and _cUploadType != 'DISTRIBUTE':
+            #     metadataID = oTemplateDetails[0]["oTemplateMetaDataListing"]["_id"]
         LogService.log(f'Validation Response == {aValidateResponse}')
         LogService.log(f'Writing to file {cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile}')
         with open(cDirValidateTemplateStatusFile + _cValidatedExcelToJSONSuccessFile, "w") as oFilePointer:
             json.dump(aValidateResponse , oFilePointer)
         LogService.log('Job done successfully, now sending success response to Node')
         LogService.log('Marking Job done in DB')
-        model_common.FunDCT_UpdateTemplateEndprocessingAndProcesslock(_iTemplateUploadLogID) if _cUploadType == 'DISTRIBUTE' else model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
+        # model_common.FunDCT_UpdateTemplateEndprocessingAndProcesslock(_iTemplateUploadLogID) if _cUploadType == 'DISTRIBUTE' else model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
 
         # model_common.FunDCT_UpdateEndprocessingAndProcesslock(_iTemplateUploadLogID)
         LogService.log('Marked Job done in DB')

@@ -198,19 +198,20 @@ def FunDCT_MemberAllFile():
             oStatusDetails = model_common.statusActive[0]
             iStatusID = oStatusDetails.get('_id')
             existing_data = model_common.getTmplMembersubmissionReqDetails(iStatusID,_iTemplateMemberSubmissionID)
-            is_consolidation_requested = {
-                    'aMemberScacCode': existing_data['IsConsolidationRequested']['aMemberScacCode'],
-                    'iEnteredby': existing_data['IsConsolidationRequested']['iEnteredby'],
-                    'IsAlreadyRequested': False
-                }
-            
+            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+            IsConsolidationRequested = {
+                "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
             aRequestDetails = {
                 "cTemplateStatusFile": cS3UrlUploadedOrg,
-                "IsConsolidationRequested": is_consolidation_requested,
+                "IsConsolidationRequested": IsConsolidationRequested,
                 "bProcesslock": "N",
                 "bProcessed": "Y",
-                "tProcessEnd": datetime.now(),
-                "tUpdated": datetime.now()
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
             }
             model_common.FunDCT_UpdateMemberSubmissionStartOrEndprocessingAndProcesslock(_iTemplateMemberSubmissionID,aRequestDetails)
             oTemplateDetails = model_common.FunDCT_GetTemplateDetails(oPostParameters['iTemplateID'])
@@ -221,19 +222,21 @@ def FunDCT_MemberAllFile():
             oStatusDetails = model_common.statusActive[0]
             iStatusID = oStatusDetails.get('_id')
             existing_data = model_common.getTmplMembersubmissionReqDetails(iStatusID,_iTemplateMemberSubmissionID)
-            is_consolidation_requested = {
-                        'aMemberScacCode': existing_data['IsConsolidationRequested']['aMemberScacCode'],
-                        'iEnteredby': existing_data['IsConsolidationRequested']['iEnteredby'],
-                        'IsAlreadyRequested': False
-                    }
-            
+            is_consolidation = existing_data.get("IsConsolidationRequested", {})
+            IsConsolidationRequested = {
+                "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
             aRequestDetails = {
-                    "IsConsolidationRequested": is_consolidation_requested,
-                    "bProcesslock": "N",
-                    "bProcessed": "F",
-                    "tProcessEnd": datetime.now(),
-                    "tUpdated": datetime.now()
-                }
+                "cTemplateStatusFile": cS3UrlUploadedOrg,
+                "IsConsolidationRequested": IsConsolidationRequested,
+                "bProcesslock": "N",
+                "bProcessed": "Y",
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
+            }
             model_common.FunDCT_UpdateMemberSubmissionStartOrEndprocessingAndProcesslock(_iTemplateMemberSubmissionID,aRequestDetails)
 
             # return MessageHandling.FunDCT_MessageHandling('Error', 'No Data')
@@ -242,18 +245,20 @@ def FunDCT_MemberAllFile():
         oStatusDetails = model_common.statusActive[0]
         iStatusID = oStatusDetails.get('_id')
         existing_data = model_common.getTmplMembersubmissionReqDetails(iStatusID,_iTemplateMemberSubmissionID)
-        is_consolidation_requested = {
-                    'aMemberScacCode': existing_data['IsConsolidationRequested']['aMemberScacCode'],
-                    'iEnteredby': existing_data['IsConsolidationRequested']['iEnteredby'],
-                    'IsAlreadyRequested': False
-                }
-            
+        is_consolidation = existing_data.get("IsConsolidationRequested", {})
+        IsConsolidationRequested = {
+                "aMemberScacCode": is_consolidation.get("aMemberScacCode", ""),
+                "iEnteredby": is_consolidation.get("iEnteredby", 0),
+                "iTemplateID": is_consolidation.get("iTemplateID", 0),
+                "IsAlreadyRequested": False
+            }
         aRequestDetails = {
-                "IsConsolidationRequested": is_consolidation_requested,
+                "cTemplateStatusFile": cS3UrlUploadedOrg,
+                "IsConsolidationRequested": IsConsolidationRequested,
                 "bProcesslock": "N",
-                "bProcessed": "F",
-                "tProcessEnd": datetime.now(),
-                "tUpdated": datetime.now()
+                "bProcessed": "Y",
+                "tProcessEnd": datetime.utcnow(),
+                "tUpdated": datetime.utcnow()
             }
         model_common.FunDCT_UpdateMemberSubmissionStartOrEndprocessingAndProcesslock(_iTemplateMemberSubmissionID,aRequestDetails)
 

@@ -74,8 +74,10 @@ export class MemberAdminUploadService {
                             aTemplateFileSize = (fileSizeInBytes / 1024).toFixed(2) + ' KB';
                             _cFileTypeUploadTemplate = path.extname(memberFilePath);
                         }
-                    }
-                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(isRateExtendMode == 'true' ? oFileStream : formData.aTemplateFileInfo.content, this._oCommonCls.cAWSBucket + '/templates/uploadtemplate/interteam/' + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
+                    }else {
+                    _cFileTypeUploadTemplate = formData.aTemplateFileInfo.filename.substring(formData.aTemplateFileInfo.filename.lastIndexOf('.'), formData.aTemplateFileInfo.filename.length);
+                }
+                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(isRateExtendMode == 'true' ? oFileStream : formData.aTemplateFileInfo.content, this._oCommonCls.cDirTemplateMemberUploadTemplate + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
                     let cAddtionalFile;
                     if (formData?.cAdditionalFiles?.length > 0) {
                         this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- filePathArray')

@@ -801,6 +801,8 @@ def FunDCT_MergeAllTemplateFile():
                 'tUpdated': datetime.now()
             }
             model_common.FunDCT_UpdateConsolidateTemplateStartOrEndprocessingAndProcesslock(_iTemplateConsolidationReqID , a_request_details)
+            oTemplateDetails = model_common.FunDCT_GetTemplateDetails(iTemplateID)
+            model_common.FunDCT_SendConsolidateFile(cS3UrlUploadedOrg, oTemplateDetails, oPostParameters)
             # return MessageHandling.FunDCT_MessageHandling('Success', cS3UrlUploadedOrg)
         else:
             iMaxDepthHeaders = model_common.FunDCT_GetMaxDepthHeader(iTemplateID)

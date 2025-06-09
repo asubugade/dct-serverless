@@ -1594,7 +1594,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 this.FunDCT_setTemplateStatusFile('VALIDATE_TEMPLATE-STATUSFILE-' + iTemplateID + '-' + this._iTemplateUploadLogID + '-' + this._cUserID + '-' + Date.now() + '.xlsx');
                 this.FunDCT_setValidateTemplateResponseFile('VALIDATE_TEMPLATE-RESPONSEFILE-' + iTemplateID + '-' + this._iTemplateUploadLogID + '-' + this._cUserID + '-' + Date.now() + '.json');
                 let userID = this.FunDCT_getUserID()
-
+                let oRequestedByUserDetails = await User.findOne({ '_id': new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) }).lean() as IUser;
                 let oTemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType }).lean() as ITemplateType;
                 const oParams = {
                     iTemplateID: iTemplateID,
@@ -1616,6 +1616,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     cType: stream,
                     preFillData: oTemplateType.preFillData,
                     startHeaderRowIndex: this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
+                    oRequestedByUserDetails: oRequestedByUserDetails,
                 };
 
                 laneSchedule.push({

@@ -308,7 +308,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
             this._oCommonCls.FunDCT_SetCurrentUserDetailsByID(oPendingConslReq.iEnteredby);
             //Add Template Loop
             let userID = this._oCommonCls.FunDCT_getUserID()
-
+            let oRequestedByUserDetails = await User.findOne({ '_id': new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) }).lean() as IUser;
             this._oGetTemplateMetaDataDetails = await TmplMetaData.find({ "iTemplateID": this.iTemplateID });
             let oTemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(this.iTemplateID) }).lean() as ITemplate;
             let cTemplateType = oTemplate.cTemplateType;
@@ -320,6 +320,7 @@ export class ClsDCT_MemberSubmissionTemplate extends ClsDCT_Common {
                 startHeaderRowIndex: this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
                 preFillData: oTemplateType.preFillData,
                 _iTemplateMemberSubmissionID: oPendingConslReq._id,
+                oRequestedByUserDetails: oRequestedByUserDetails,
             };
             const laneSchedule = {
                 iTemplateTypeID: iTemplateTypeID,

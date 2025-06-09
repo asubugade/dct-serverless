@@ -907,19 +907,27 @@ def FunDCT_GetColumnNumber(cLetter):
         iNum = iNum * 26 + 1 + ord(cLetterVal) - ord('A')
     return int(iNum)
 
-def FunDCT_GetColumnIndex(oSheetUploaded, cHeaderLabel):
-    try:
-        iMaxRowUploaded = oSheetUploaded.max_row
-        iMaxColumnUploaded = oSheetUploaded.max_column
+# def FunDCT_GetColumnIndex(oSheetUploaded, cHeaderLabel):
+#     try:
+#         iMaxRowUploaded = oSheetUploaded.shape[0]
+#         iMaxColumnUploaded = oSheetUploaded.shape[1]
+#         # iMaxColumnUploaded = oSheetUploaded.max_column
 
-        for iIndexRow in range(1, iMaxRowUploaded + 1):
-            for jIndexCol in range(1, iMaxColumnUploaded + 1):
-                oMemberCellVal = oSheetUploaded.cell(
-                    row=iIndexRow, column=jIndexCol)
-                if oMemberCellVal.value == cHeaderLabel:
-                    return jIndexCol
-    except Exception as e:
-        return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_GetColumnIndex Error while parsing file due to ' + str(e))
+#         for iIndexRow in range(1, iMaxRowUploaded + 1):
+#             for jIndexCol in range(1, iMaxColumnUploaded + 1):
+#                 oMemberCellVal = oSheetUploaded.cell(
+#                     row=iIndexRow, column=jIndexCol)
+#                 if oMemberCellVal.value == cHeaderLabel:
+#                     return jIndexCol
+#     except Exception as e:
+#         return MessageHandling.FunDCT_MessageHandling('Error', 'FunDCT_GetColumnIndex Error while parsing file due to ' + str(e))
+
+def FunDCT_GetColumnIndex(oSheetUploaded, cHeaderLabel):
+    for key, row in oSheetUploaded.iterrows():
+        for col_idx, item in enumerate(row):
+            if item == cHeaderLabel:
+                return col_idx + 1
+    return 0
 def FunDCT_GetMappigColumnRangesForMaxDepept1(oValidationsDetails):
     try:
         aMergedCellRanges = defaultdict(dict)

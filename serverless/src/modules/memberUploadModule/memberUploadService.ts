@@ -262,8 +262,10 @@ export class MemberUploadService {
                             _cFileTypeUploadTemplate = path.extname(memberFilePath);
 
                         }
+                    }else{
+                    _cFileTypeUploadTemplate = formData.aTemplateFileInfo.filename.substring(formData.aTemplateFileInfo.filename.lastIndexOf('.'), formData.aTemplateFileInfo.filename.length);
                     }
-                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(isRateExtendMode == 'true' ? oFileStream : formData.aTemplateFileInfo.content, this._oCommonCls.cAWSBucket + '/templates/uploadtemplate/interteam/' + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
+                    let cRenamedFile = await this._oCommonCls.FunDCT_UploadProfileImage(isRateExtendMode == 'true' ? oFileStream : formData.aTemplateFileInfo.content, this._oCommonCls.cDirTemplateMemberUploadTemplate + 'MEMBER_UPLOAD-' + iTemplateID + '-' + Date.now() + _cFileTypeUploadTemplate);
                     let cAddtionalFile;
                     if (formData?.cAdditionalFiles?.length > 0) {
                         this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- filePathArray')
@@ -346,7 +348,7 @@ export class MemberUploadService {
                             DCTVARIABLE_ADDITIONALEMAILBODY: aRequestDetails.cAddtionalComment,
                         };
                         this._oEmailTemplateCls.FunDCT_SetSubject(aVariablesVal.DCTVARIABLE_TEMPLATENAME + ' (' + iDefaultSubject + ')') //oEmailTemplateDetails[0].cSubject
-                        await this._oEmailTemplateCls.FunDCT_SendNotification('RATE_EXTEND', oEmailTemplateDetailList.cEmailType, aVariablesVal, cEmailList);
+                        // await this._oEmailTemplateCls.FunDCT_SendNotification('RATE_EXTEND', oEmailTemplateDetailList.cEmailType, aVariablesVal, cEmailList);
                     }
                     await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, memTmplUploadLogDetail, "TemplateUpload")
 

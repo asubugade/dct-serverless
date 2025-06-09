@@ -1817,7 +1817,7 @@ functions:
 
   validatePython:
       handler: src/python/validateUploadTemplate.handler  # Points to Python code
-      runtime: python3.9  # Python runtime
+      runtime: python3.12  # Python runtime
       timeout: 900
       events:
         - http:
@@ -1829,7 +1829,7 @@ functions:
           
   createTemplateFilePython:
       handler: src/python/createFiles.handler  # Points to Python code
-      runtime: python3.9  # Python runtime
+      runtime: python3.12  # Python runtime
       timeout: 900
       events:
         - http:
@@ -1841,7 +1841,7 @@ functions:
 
   exportListingPython:
       handler: src/python/exportListing.handler  # Points to Python code
-      runtime: python3.9  # Python runtime
+      runtime: python3.12  # Python runtime
       timeout: 900
       events:
         - http:
@@ -1852,7 +1852,7 @@ functions:
 
   # excelToJsonConverter:
   #     handler: src/python/parseFiles.handler  # Points to Python code
-  #     runtime: python3.9  # Python runtime
+  #     runtime: python3.12  # Python runtime
   #     timeout: 900
 
   #     events:

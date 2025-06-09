@@ -350,6 +350,7 @@ export class ClsDCT_ConsolidateTemplate extends ClsDCT_Common {
             this._oGetTemplateMetaDataDetails = await TmplMetaData.find({ "iTemplateID": this.iTemplateID });
             let oTemplate = await Template.findOne({ _id: new mongoose.Types.ObjectId(this.iTemplateID) }).lean() as ITemplate;
             let cTemplateType = oTemplate.cTemplateType;
+            let oRequestedByUserDetails = await User.findOne({ '_id': new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) }).lean() as IUser;
             let oTemplateType = await GenTemplateType.findOne({ cTemplateType: cTemplateType }).lean() as ITemplateType;
             const oParams = {
                 cDirFile: this.cDirConsolidationTemplate, iTemplateID: this.iTemplateID, cRequestType: oPendingConslReq.cRequestType,
@@ -358,6 +359,7 @@ export class ClsDCT_ConsolidateTemplate extends ClsDCT_Common {
                 startHeaderRowIndex: this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
                 preFillData: oTemplateType.preFillData,
                 _iTemplateConsolidationReqID: oPendingConslReq._id,
+                oRequestedByUserDetails: oRequestedByUserDetails,
             };
 
             const laneSchedule = {
