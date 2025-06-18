@@ -71,6 +71,8 @@ export class CreateTemplateService {
       let validateTemplateResponce = await this._oManageTemplateCls.FunDCT_ValidateTemplate(formData);
       let oTemplate = JSON.parse(validateTemplateResponce)
       if (oTemplate.cStatus == 'Success') {
+        console.log("================sssssssss>", oTemplate);
+        
         let objRes: any = await this._oManageTemplateCls.FunDCT_ExcelToJSON_Converter(oTemplate);
         if (objRes.cStatus == 'Success') {
           let oJSONRes = {

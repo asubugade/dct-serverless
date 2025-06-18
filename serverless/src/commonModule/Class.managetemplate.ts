@@ -437,43 +437,51 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
      * @param aHeaderDetails any
      * @param aObjToArr any
      */
-    public async FunDCT_ParentHeaderLabelToChild(aHeaderDetails: any, aObjToArr: any) {
+    public async FunDCT_ParentHeaderLabelToChild(aHeaderDetails: Object, aObjToArr: any) {
         // const aParentHeader: any = _.filter(aObjToArr, {cParentHeader: ''});
-        for (var cKey in aHeaderDetails) {
-            if (aHeaderDetails[cKey]['iRow'] > 1 && aHeaderDetails[cKey]['cCellCordinate'] != '-') {
-                let cStartRange: string = aHeaderDetails[cKey]['cCellCordinate'];
-                let cAlpha = cStartRange.replace(/[^a-z]/gi, '');
-                let iActualRow = aHeaderDetails[cKey]['iRow'] - 1;
-                let aFilteredHeader: any;
+        try {
+            for (var [sheetName, aHeaderDetail] of Object.entries(aHeaderDetails)) {
+                for (var cKey in aHeaderDetail) {
+                    if (aHeaderDetail[cKey]['iRow'] > 1 && aHeaderDetail[cKey]['cCellCordinate'] != '-') {
+                        let cStartRange: string = aHeaderDetail[cKey]['cCellCordinate'];
+                        let cAlpha = cStartRange.replace(/[^a-z]/gi, '');
+                        let iActualRow = aHeaderDetail[cKey]['iRow'] - 1;
+                        let aFilteredHeader: any;
 
-                aFilteredHeader = _.filter(aObjToArr, { iRow: iActualRow, cParentHeader: '', jColumn: aHeaderDetails[cKey]['jColumn'] });
-                if (aFilteredHeader.length <= 0) {
-                    for (var iIndex = aHeaderDetails[cKey]['jColumn'] - 1, end = 1; iIndex >= end; --iIndex) {
-                        aFilteredHeader = _.filter(aObjToArr, { iRow: iActualRow, cParentHeader: '', jColumn: iIndex });
-                        if (aFilteredHeader.length > 0) {
-                            break;
+                        aFilteredHeader = _.filter(aObjToArr[sheetName], { iRow: iActualRow, cParentHeader: '', jColumn: aHeaderDetail[cKey]['jColumn'] });
+                        if (aFilteredHeader.length <= 0) {
+                            for (var iIndex = aHeaderDetail[cKey]['jColumn'] - 1, end = 1; iIndex >= end; --iIndex) {
+                                aFilteredHeader = _.filter(aObjToArr[sheetName], { iRow: iActualRow, cParentHeader: '', jColumn: iIndex });
+                                if (aFilteredHeader.length > 0) {
+                                    break;
+                                }
+                            }
                         }
+
+                        for (var cKeyFiltered in aFilteredHeader) {
+                            let iIndexChildren: number = aHeaderDetail[aFilteredHeader[cKeyFiltered]['iIndex']]['children'].length;
+                            aHeaderDetail[cKey]['cParentHeader'] = aHeaderDetail[aFilteredHeader[cKeyFiltered]['iIndex']]['cHeaderLabel'];
+
+                            aHeaderDetail[cKey]['aValidations'] = (typeof aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']] === 'object') ? Object.assign({}, aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']]) : aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']];
+                            aHeaderDetail[cKey]['aRowColors'] = aObjToArr[sheetName][0]['aValidationsColors'][aHeaderDetail[cKey]['cStartRange']];
+
+                            // Future Use if needs to add children to parent
+                            //aHeaderDetail[aFilteredHeader[cKeyFiltered]['iIndex']]['children'][iIndexChildren] = aHeaderDetail[cKey];
+                            iIndexChildren += 1
+                        }
+                    } else {
+                        aHeaderDetail[cKey]['aValidations'] = (typeof aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']] === 'object') ? Object.assign({}, aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']]) : aObjToArr[sheetName][0]['aPrimaryValidations'][aHeaderDetail[cKey]['cStartRange']];
+                        aHeaderDetail[cKey]['aRowColors'] = aObjToArr[sheetName][0]['aValidationsColors'][aHeaderDetail[cKey]['cStartRange']];
                     }
                 }
-
-                for (var cKeyFiltered in aFilteredHeader) {
-                    let iIndexChildren: number = aHeaderDetails[aFilteredHeader[cKeyFiltered]['iIndex']]['children'].length;
-                    aHeaderDetails[cKey]['cParentHeader'] = aHeaderDetails[aFilteredHeader[cKeyFiltered]['iIndex']]['cHeaderLabel'];
-
-                    aHeaderDetails[cKey]['aValidations'] = (typeof aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']] === 'object') ? Object.assign({}, aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']]) : aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']];
-                    aHeaderDetails[cKey]['aRowColors'] = aObjToArr[0]['aValidationsColors'][aHeaderDetails[cKey]['cStartRange']];
-
-                    // Future Use if needs to add children to parent
-                    //aHeaderDetails[aFilteredHeader[cKeyFiltered]['iIndex']]['children'][iIndexChildren] = aHeaderDetails[cKey];
-                    iIndexChildren += 1
-                }
-            } else {
-                aHeaderDetails[cKey]['aValidations'] = (typeof aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']] === 'object') ? Object.assign({}, aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']]) : aObjToArr[0]['aPrimaryValidations'][aHeaderDetails[cKey]['cStartRange']];
-                aHeaderDetails[cKey]['aRowColors'] = aObjToArr[0]['aValidationsColors'][aHeaderDetails[cKey]['cStartRange']];
             }
-        }
 
-        return aHeaderDetails;
+            return aHeaderDetails;
+        } catch (error) {
+            this.error(error.message);
+            // process.exit(1);
+
+        }
     }
 
 
@@ -657,7 +665,17 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             if (oResPyProg.cStatus == 'Success') {
                 let oResponseParse = oResPyProg.oResponse
                 this.aStructuredHeaderFromExcel = oResponseParse;
-                let aObjToArr = _.toArray(oResponseParse);
+                const aObjToArr = {};
+
+                for (const sheetName in oResponseParse) {
+                    if (oResponseParse.hasOwnProperty(sheetName)) {
+                        const sheetData = oResponseParse[sheetName];
+                        // Convert object with keys '0', '1', '2'... to an array
+                        aObjToArr[sheetName] = Object.keys(sheetData)
+                            .sort((a, b) => Number(a) - Number(b)) // ensure numeric order
+                            .map(key => sheetData[key]);
+                    }
+                }
 
                 aHeaderDetails = await this.FunDCT_ParentHeaderLabelToChild(aObjToArr, aObjToArr);
                 let aApplyDeeptoStructure: any;
@@ -667,18 +685,33 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                         const inner = (arr) =>
                             arr.map((obj) =>
                                 Object.entries(obj).reduce((result, [key, value]) => {
-                                    propsToKeepDict.has(key) && (result[key] = Array.isArray(value) ? inner(value) : value);
+                                    if (propsToKeepDict.has(key)) {
+                                        result[key] = Array.isArray(value) ? inner(value) : value;
+                                    }
                                     return result;
-                                }, {}));
+                                }, {})
+                            );
                         return inner(arr);
+                    };
+
+                    const oResult = {};
+                    for (const [sheetName, sheetData] of Object.entries(aHeaderDetails)) {
+                        const filtered = oPickDeep(sheetData, [
+                            'cHeaderLabel', 'cParentHeader', 'cTextColor', 'cBackColor',
+                            'cValidations', 'cRangeValidations', 'cStartRange',
+                            'cCellCordinate', 'iRow', 'jColumn', 'iMaxRow',
+                            'aValidations', 'aRowColors', 'typeaValidations', 'cComment'
+                        ]);
+
+                        // Sort each sheet's entries if needed
+                        oResult[sheetName] = _.orderBy(filtered, ['jColumn'], ['asc']);
                     }
-                    aApplyDeeptoStructure = oPickDeep(aHeaderDetails, ['cHeaderLabel', 'cParentHeader', 'cTextColor', 'cBackColor', 'cValidations', 'cRangeValidations', 'cStartRange', 'cCellCordinate', 'iRow', 'jColumn', 'iMaxRow', 'aValidations', 'aRowColors', 'typeaValidations', 'cComment']);
+
+                    oResult['cStatus'] = 'Success';
+                    return oResult;
                 }
-                if (aApplyDeeptoStructure) {
-                    let aApplyDeeptoStructureNew = _.orderBy(aApplyDeeptoStructure, ['jColumn'], ['asc']);
-                    aApplyDeeptoStructureNew['cStatus'] = 'Success';
-                    return aApplyDeeptoStructureNew;
-                }
+
+
             } else {
                 return oResPyProg;
             }
