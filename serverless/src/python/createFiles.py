@@ -44,12 +44,14 @@ def handler(event: dict, context=None):
                 roots.append((sheet_name, root))
         else:
             root = importer.import_(aStructuredHeaderData)
+            print("root===========>" , root)
             roots.append(("Sheet1", root))
+            print("roots===========>" , roots)
  
         for sheet_name, root in roots:
             oWorksheet = oWorkbook.add_worksheet(sheet_name)
  
-            aTemplateHeaderSheet = oTemplateMetaData['aTemplateHeader'].get(sheet_name, [])
+            aTemplateHeaderSheet = oTemplateMetaData['aTemplateHeader'].get(sheet_name, []) if is_multi_sheet else oTemplateMetaData['aTemplateHeader']
             aFilteredParentHeader = [aHeader for aHeader in aTemplateHeaderSheet if aHeader['cParentHeader'] == '']
  
             iRow = 0
@@ -59,6 +61,7 @@ def handler(event: dict, context=None):
             iGetTotalLeavesOfAttr = 0
             iIternationOfLeaves = 0
             for aHeaderDetails in aFilteredParentHeader:
+                print("aHeaderDetails===========>" , aHeaderDetails)
                 aParentHeaderList.append(aHeaderDetails['cHeaderLabel'])
                 iSubHeaders = FunDCT_DefineHeaderLevels(root, aHeaderDetails['cHeaderLabel'], 'ParentChild Header Length')
                 iColEnd = iColStart + iSubHeaders - 1
@@ -81,8 +84,19 @@ def handler(event: dict, context=None):
                     iChildColStart = iColStart
                     iChildColEnd = 0
                     if len(aHeaderDetails['children']) > 0:
+                        print("root===========>" , root)
+                        print("aHeaderDetails['children']===========>" , aHeaderDetails['children'])
+                        print("iHeaderLevel===========>" , iHeaderLevel)
+                        print("iChildColStart===========>" , iChildColStart)
+                        print("iChildColEnd===========>" , iChildColEnd)
+                        print("iGetTotalLeavesOfAttr===========>" , iGetTotalLeavesOfAttr)
+                        print("iIternationOfLeaves===========>" , iIternationOfLeaves)
+                        print("oWorksheet===========>" , oWorksheet)
+                        print("oWorkbook===========>" , oWorkbook)
                         iChildColStart = iColStart
+                        print("========================if===========>")
                         FunDCT_TraverseThroughChildHeaders(root,aHeaderDetails['children'], iHeaderLevel, iChildColStart, iChildColEnd, iGetTotalLeavesOfAttr, iIternationOfLeaves, oWorksheet, oWorkbook)
+                        print("========================else-end===========>")
                 else:
                     oCellFormat.set_align('center')
                     oCellFormat.set_valign('vcenter')
@@ -99,8 +113,19 @@ def handler(event: dict, context=None):
                     iChildColEnd = 0
  
                     if len(aHeaderDetails['children']) > 0:
+                        print("root===========>" , root)
+                        print("aHeaderDetails['children']===========>" , aHeaderDetails['children'])
+                        print("iHeaderLevel===========>" , iHeaderLevel)
+                        print("iChildColStart===========>" , iChildColStart)
+                        print("iChildColEnd===========>" , iChildColEnd)
+                        print("iGetTotalLeavesOfAttr===========>" , iGetTotalLeavesOfAttr)
+                        print("iIternationOfLeaves===========>" , iIternationOfLeaves)
+                        print("oWorksheet===========>" , oWorksheet)
+                        print("oWorkbook===========>" , oWorkbook)
                         iChildColStart = iColStart
+                        print("========================else===========>")
                         FunDCT_TraverseThroughChildHeaders(root,aHeaderDetails['children'], iHeaderLevel, iChildColStart, iChildColEnd, iGetTotalLeavesOfAttr, iIternationOfLeaves, oWorksheet, oWorkbook)
+                        print("========================else-end===========>")
 
  
                 if 'NO_CHANGE' not in aHeaderDetails['cValidations']:
