@@ -367,18 +367,58 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
      * To get Structurized header array from posted json
      * @param aTemplateHeader any
      */
+
+
+    // public async FunDCT_StructurizedHeader(aTemplateHeader: any) {
+    //     var oHeaderTree = {};
+    //     var iIndexRow = 0;
+    //     return aTemplateHeader.filter(function (oHeaderObj) {
+    //         var cHeaderLabel = oHeaderObj["cHeaderLabel"],
+    //             cParentHeader = oHeaderObj["cParentHeader"];
+    //         oHeaderTree[cHeaderLabel] = _.defaults(oHeaderObj, oHeaderTree[cHeaderLabel], { children: [] });
+    //         cParentHeader && (oHeaderTree[cParentHeader] = (oHeaderTree[cParentHeader] || { children: [] }))["children"].push(oHeaderObj);
+    //         iIndexRow++;
+    //         return !cParentHeader;
+    //     });
+    // }
+
+
     public async FunDCT_StructurizedHeader(aTemplateHeader: any) {
-        var oHeaderTree = {};
-        var iIndexRow = 0;
-        return aTemplateHeader.filter(function (oHeaderObj) {
-            var cHeaderLabel = oHeaderObj["cHeaderLabel"],
-                cParentHeader = oHeaderObj["cParentHeader"];
-            oHeaderTree[cHeaderLabel] = _.defaults(oHeaderObj, oHeaderTree[cHeaderLabel], { children: [] });
-            cParentHeader && (oHeaderTree[cParentHeader] = (oHeaderTree[cParentHeader] || { children: [] }))["children"].push(oHeaderObj);
-            iIndexRow++;
-            return !cParentHeader;
-        });
+        const isSingleSheet = Array.isArray(aTemplateHeader);
+        const oStructurizedHeaders = {};
+
+        const processSheet = (sheetData: any[]) => {
+            const oHeaderTree = {};
+
+            const aRootHeaders = sheetData.filter(function (oHeaderObj) {
+                const cHeaderLabel = oHeaderObj["cHeaderLabel"];
+                const cParentHeader = oHeaderObj["cParentHeader"];
+
+                oHeaderTree[cHeaderLabel] = _.defaults(oHeaderObj, oHeaderTree[cHeaderLabel], { children: [] });
+
+                if (cParentHeader) {
+                    oHeaderTree[cParentHeader] = oHeaderTree[cParentHeader] || { children: [] };
+                    oHeaderTree[cParentHeader]["children"].push(oHeaderObj);
+                }
+
+                return !cParentHeader;
+            });
+
+            return aRootHeaders;
+        };
+
+        if (isSingleSheet) {
+            // Single sheet array input
+            return processSheet(aTemplateHeader);
+        } else {
+            // Multiple sheets
+            for (const [sheetName, sheetData] of Object.entries(aTemplateHeader)) {
+                oStructurizedHeaders[sheetName] = processSheet(sheetData as any[]);
+            }
+            return oStructurizedHeaders;
+        }
     }
+
 
     /**
      * To Add Level Last to the Child Header which have no child headers
@@ -496,35 +536,86 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             let stream = '/API/CREATE_TEMPLATE/' + oTemplates._id
             this.FunDCT_ApiRequest({ baseUrl: stream })
             const aStructuredHeaderData = await this.FunDCT_StructurizedHeader(oTemplateMetaData.aTemplateHeader);
+            // if (aStructuredHeaderData) {
+            //     const pickDeep = (arr, propsToKeep) => {
+            //         const propsToKeepDict = new Set(propsToKeep);
+            //         const inner = (arr) =>
+            //             arr.map((obj) =>
+            //                 Object.entries(obj).reduce((result, [key, value]) => {
+            //                     propsToKeepDict.has(key) && (result[key] = Array.isArray(value) ? inner(value) : value);
+            //                     return result;
+            //                 }, {}));
+            //         return inner(arr);
+            //     }
+            //     const aApplyDeeptoStructure = pickDeep(aStructuredHeaderData, ['cHeaderLabel', 'children']);
+
+            //     let aAppendDatatoRoot = { "cHeaderLabel": "root", "children": aApplyDeeptoStructure };
+            //     this.cTemplateSampleFile = 'CREATE_TEMPLATE-SAMPLE-' + oTemplates._id;
+            //     let cFileType = '.xlsx';
+            //     let userID = this.FunDCT_getUserID()
+            //     const oParams = {
+            //         'cDirTemplateSampleFile': this.cDirTemplateSampleFile, 'cTemplateSampleFile': this.cTemplateSampleFile, 'cFileType': cFileType,
+            //         'iTemplateID': this.FunDCT_getTemplateID(),
+            //         'cUserID': userID ? userID : '0001',
+            //         'oTemplateMetaData': oTemplateMetaData,
+            //         'aAppendDatatoRoot': aAppendDatatoRoot,
+            //         'cType': stream
+            //     };
+            //     this.log(`${JSON.stringify(oParams)} parameters sending file to createfiles.py`)
+            //     const response = await axios.post(`${this.cBackEndURILocal}api/createfiles`, oParams);
+            //     let oResPyProg = JSON.parse(response.data);
+            //     this.log(`Response fromf create.py Files ${oResPyProg}`)
+            //     return oResPyProg;
+            // }
             if (aStructuredHeaderData) {
                 const pickDeep = (arr, propsToKeep) => {
                     const propsToKeepDict = new Set(propsToKeep);
                     const inner = (arr) =>
                         arr.map((obj) =>
                             Object.entries(obj).reduce((result, [key, value]) => {
-                                propsToKeepDict.has(key) && (result[key] = Array.isArray(value) ? inner(value) : value);
+                                if (propsToKeepDict.has(key)) {
+                                    result[key] = Array.isArray(value) ? inner(value) : value;
+                                }
                                 return result;
                             }, {}));
                     return inner(arr);
-                }
-                const aApplyDeeptoStructure = pickDeep(aStructuredHeaderData, ['cHeaderLabel', 'children']);
-
-                let aAppendDatatoRoot = { "cHeaderLabel": "root", "children": aApplyDeeptoStructure };
-                this.cTemplateSampleFile = 'CREATE_TEMPLATE-SAMPLE-' + oTemplates._id;
-                let cFileType = '.xlsx';
-                let userID = this.FunDCT_getUserID()
-                const oParams = {
-                    'cDirTemplateSampleFile': this.cDirTemplateSampleFile, 'cTemplateSampleFile': this.cTemplateSampleFile, 'cFileType': cFileType,
-                    'iTemplateID': this.FunDCT_getTemplateID(),
-                    'cUserID': userID ? userID : '0001',
-                    'oTemplateMetaData': oTemplateMetaData,
-                    'aAppendDatatoRoot': aAppendDatatoRoot,
-                    'cType': stream
                 };
-                this.log(`${JSON.stringify(oParams)} parameters sending file to createfiles.py`)
+
+                let aAppendDatatoRoot;
+
+                if (Array.isArray(aStructuredHeaderData)) {
+                    // Single sheet case
+                    const aApplyDeeptoStructure = pickDeep(aStructuredHeaderData, ['cHeaderLabel', 'children']);
+                    aAppendDatatoRoot = { cHeaderLabel: "root", children: aApplyDeeptoStructure };
+                } else {
+                    // Multi-sheet case
+                    const oChildren = {};
+                    for (const [sheetName, headers] of Object.entries(aStructuredHeaderData)) {
+                        oChildren[sheetName] = pickDeep(headers, ['cHeaderLabel', 'children']);
+                    }
+                    aAppendDatatoRoot = { cHeaderLabel: "root", children: oChildren };
+                }
+
+                this.cTemplateSampleFile = 'CREATE_TEMPLATE-SAMPLE-' + oTemplates._id;
+                const cFileType = '.xlsx';
+                const userID = this.FunDCT_getUserID();
+
+                const oParams = {
+                    cDirTemplateSampleFile: this.cDirTemplateSampleFile,
+                    cTemplateSampleFile: this.cTemplateSampleFile,
+                    cFileType: cFileType,
+                    iTemplateID: this.FunDCT_getTemplateID(),
+                    cUserID: userID ? userID : '0001',
+                    oTemplateMetaData: oTemplateMetaData,
+                    aAppendDatatoRoot: aAppendDatatoRoot,
+                    cType: stream
+                };
+
+                this.log(`${JSON.stringify(oParams)} parameters sending file to createfiles.py`);
+
                 const response = await axios.post(`${this.cBackEndURILocal}api/createfiles`, oParams);
-                let oResPyProg = JSON.parse(response.data);
-                this.log(`Response fromf create.py Files ${oResPyProg}`)
+                const oResPyProg = JSON.parse(response.data);
+                this.log(`Response from create.py Files ${oResPyProg}`);
                 return oResPyProg;
             }
         } catch (err) {

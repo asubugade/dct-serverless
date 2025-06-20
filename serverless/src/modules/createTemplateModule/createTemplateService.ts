@@ -72,9 +72,12 @@ export class CreateTemplateService {
       let oTemplate = JSON.parse(validateTemplateResponce)
       if (oTemplate.cStatus == 'Success') {
         console.log("================sssssssss>", oTemplate);
-        
+
         let objRes: any = await this._oManageTemplateCls.FunDCT_ExcelToJSON_Converter(oTemplate);
         if (objRes.cStatus == 'Success') {
+          if ('cStatus' in objRes) {
+            delete objRes.cStatus;
+          }
           let oJSONRes = {
             aModuleDetails: objRes
           };
