@@ -584,7 +584,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 let aAppendDatatoRoot;
 
                 if (Array.isArray(aStructuredHeaderData)) {
-                    // Single sheet case
+                    // Single sheet case                    
                     const aApplyDeeptoStructure = pickDeep(aStructuredHeaderData, ['cHeaderLabel', 'children']);
                     aAppendDatatoRoot = { cHeaderLabel: "root", children: aApplyDeeptoStructure };
                 } else {

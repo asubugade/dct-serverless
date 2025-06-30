@@ -56,7 +56,7 @@ def handler(event: dict, context=None):
                 return MessageHandling.FunDCT_MessageHandling('ErrorValidation', cColumnValue)
 
         else:
-            return MessageHandling.FunDCT_MessageHandling('Error', 'Please Select a valid file for Creating Template !')
+            return MessageHandling.FunDCT_MessageHandling('ErrorValidation', 'sheet should have only 3 rows ')
 
     except Exception as e:
         LogService.log(e)

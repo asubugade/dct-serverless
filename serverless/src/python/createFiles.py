@@ -84,19 +84,9 @@ def handler(event: dict, context=None):
                     iChildColStart = iColStart
                     iChildColEnd = 0
                     if len(aHeaderDetails['children']) > 0:
-                        print("root===========>" , root)
-                        print("aHeaderDetails['children']===========>" , aHeaderDetails['children'])
-                        print("iHeaderLevel===========>" , iHeaderLevel)
-                        print("iChildColStart===========>" , iChildColStart)
-                        print("iChildColEnd===========>" , iChildColEnd)
-                        print("iGetTotalLeavesOfAttr===========>" , iGetTotalLeavesOfAttr)
-                        print("iIternationOfLeaves===========>" , iIternationOfLeaves)
-                        print("oWorksheet===========>" , oWorksheet)
-                        print("oWorkbook===========>" , oWorkbook)
+                        
                         iChildColStart = iColStart
-                        print("========================if===========>")
                         FunDCT_TraverseThroughChildHeaders(root,aHeaderDetails['children'], iHeaderLevel, iChildColStart, iChildColEnd, iGetTotalLeavesOfAttr, iIternationOfLeaves, oWorksheet, oWorkbook)
-                        print("========================else-end===========>")
                 else:
                     oCellFormat.set_align('center')
                     oCellFormat.set_valign('vcenter')
@@ -113,19 +103,9 @@ def handler(event: dict, context=None):
                     iChildColEnd = 0
  
                     if len(aHeaderDetails['children']) > 0:
-                        print("root===========>" , root)
-                        print("aHeaderDetails['children']===========>" , aHeaderDetails['children'])
-                        print("iHeaderLevel===========>" , iHeaderLevel)
-                        print("iChildColStart===========>" , iChildColStart)
-                        print("iChildColEnd===========>" , iChildColEnd)
-                        print("iGetTotalLeavesOfAttr===========>" , iGetTotalLeavesOfAttr)
-                        print("iIternationOfLeaves===========>" , iIternationOfLeaves)
-                        print("oWorksheet===========>" , oWorksheet)
-                        print("oWorkbook===========>" , oWorkbook)
+                       
                         iChildColStart = iColStart
-                        print("========================else===========>")
                         FunDCT_TraverseThroughChildHeaders(root,aHeaderDetails['children'], iHeaderLevel, iChildColStart, iChildColEnd, iGetTotalLeavesOfAttr, iIternationOfLeaves, oWorksheet, oWorkbook)
-                        print("========================else-end===========>")
 
  
                 if 'NO_CHANGE' not in aHeaderDetails['cValidations']:
