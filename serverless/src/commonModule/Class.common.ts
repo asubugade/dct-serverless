@@ -31,6 +31,8 @@ const BufferReader = require('buffer-reader');
 import axios from 'axios';
 import TmplConsolidationReq from "../models/TmplConsolidationReq"
 import MemberSubmissionDownloadLogSchema from "../models/MemberSubmissionDownloadLog"
+import moment from "moment";
+import { ClsDCT_EmailTemplate } from "./Class.emailtemplate";
 
 export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cRandomUnique: string;//used for general random string
@@ -58,6 +60,8 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cMemberEmail: string;
     public cCurrentAPIrequest: string
     public currentStreamName: string;
+    private mailTemplate = new ClsDCT_EmailTemplate()
+
     // private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
 
     /**
@@ -1347,6 +1351,82 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
         logger.setStream(this.cUserID + this.cCurrentAPIrequest)
         return logger.log(args.toString())
     }
+
+
+
+    public checkAndSendPasswordExpiryEmails = async () => {
+
+        const users = await User.aggregate([
+            {
+                $lookup: {
+                    from: "gen_statuses",
+                    let: { statusId: "$iStatusID" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$_id", "$$statusId"] },
+                                        { $eq: ["$cStatusCode", "ACTIVE"] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "oStatusListing"
+                }
+            },
+            {
+                $unwind: "$oStatusListing"
+            },
+            {
+                $project: {
+                    cEmail: 1,
+                    lastPasswordReset: 1
+                }
+            }
+        ]);
+
+
+        for (const user of users) {
+            if (!user.lastPasswordReset) continue;
+
+            const expiryDate = moment(user.lastPasswordReset).add(90, 'days');
+            const today = moment().startOf('day');
+            const daysLeft = expiryDate.diff(today, 'days');
+
+            if ([7, 3, 0].includes(daysLeft)) {
+                let subject = '';
+                let message = '';
+
+                if (daysLeft === 7) {
+                    subject = 'Password Expiry Reminder: 7 Days Left';
+                    message = 'Your password will expire in 7 days. Please reset it to maintain access.';
+                } else if (daysLeft === 3) {
+                    subject = 'Password Expiry Reminder: 3 Days Left';
+                    message = 'Your password will expire in 3 days. Reset it soon to avoid interruption.';
+                } else if (daysLeft === 0) {
+                    subject = 'Password Expired Today';
+                    message = 'Your password expires today. Please reset it immediately.';
+                }
+
+                const mailOptions = {
+                    from: '"System Admin" <no-reply@yourdomain.com>',
+                    to: user.cEmail,
+                    subject: subject,
+                    text: message
+                };
+
+                try {
+                    await this.mailTemplate.sendMail(mailOptions);
+                } catch (err) {
+                    this.log(`Failed to send email to ${user.cEmail}: ${err}`);
+                }
+            }
+        }
+    }
+
+
 
 }
 export default new ClsDCT_Common();

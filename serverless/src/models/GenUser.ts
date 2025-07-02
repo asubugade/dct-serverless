@@ -51,6 +51,7 @@ export interface IUser extends Document {
   tEntered: Date;
   iUpdatedby: string;
   tUpdated: Date;
+  lastPasswordReset?: Date,
 }
 
 const userSchema: Schema = new Schema({
@@ -112,7 +113,7 @@ const userSchema: Schema = new Schema({
   },
   cPwdToken: {
     type: String
-  },  
+  },
   iStatusID: {
     type: Schema.Types.ObjectId,
     ref: "gen_statuses"
@@ -131,9 +132,10 @@ const userSchema: Schema = new Schema({
   tUpdated: {
     type: Date
   },
+  lastPasswordReset: { type: Date },
   passwordHistory: {
-    type: [String], 
-    default: []  
+    type: [String],
+    default: []
   }
 });
 

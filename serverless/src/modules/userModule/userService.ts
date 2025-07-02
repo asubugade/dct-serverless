@@ -28,6 +28,7 @@ import { getUser, getUserCount } from "./usersDal";
 import Status, { IStatus } from "../../models/GenStatus";
 import { ClsDCT_User } from "../../commonModule/Class.user";
 import { ClsDCT_Common } from "../../commonModule/Class.common";
+import moment from "moment";
 
 const oMimeType = require('mime-types');
 
@@ -290,7 +291,10 @@ export class GenUserService {
       // const salt = await oBcrypt.genSalt(10);
       // const cPassword = await oBcrypt.hash(cUsername, salt);
       let passwordHistory = [];
-      const aRequestDetails = { iAccessTypeID, cTemplateType: cTemplateType, cEmail, cPassword, passwordHistory, cAvatar, cName, cUsername, cCompanyname, cAddress, cCity, cPostalcode, cState, cPhone, cFax, iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date() };
+      let aRequestDetails: any = { iAccessTypeID, cTemplateType: cTemplateType, cEmail, cPassword, passwordHistory, cAvatar, cName, cUsername, cCompanyname, cAddress, cCity, cPostalcode, cState, cPhone, cFax, iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date() };
+      if (formData.cPassword) {
+        aRequestDetails.lastPasswordReset = moment().toDate()
+      }
 
       let oUser = await User.findOne({ iAccessTypeID: iAccessTypeID, cEmail: cEmail }).lean() as IUser;
       if (oUser) {
@@ -385,7 +389,7 @@ export class GenUserService {
         const cPassword = await oBcrypt.hash(formData.cPassword, salt);//code added by spirgonde for edit pasword
         aUserFields = {
           iAccessTypeID, cTemplateType: cTemplateType, cEmail, cPassword, cName, cUsername, cCompanyname, cAddress, cCity, cPostalcode, cState,
-          cPhone, cFax, iStatusID, iUpdatedby: event.requestContext.authorizer._id, tUpdated: new Date(), cAvatar: cAvatar
+          cPhone, cFax, iStatusID, iUpdatedby: event.requestContext.authorizer._id, tUpdated: new Date(), cAvatar: cAvatar, lastPasswordReset: moment().toDate(),
         };
       }
       else {
@@ -583,9 +587,9 @@ export class GenUserService {
             body: JSON.stringify({ error: 'New password must not match any of the last 3 passwords' }),
           };
         }
-      }    
+      }
 
-      
+
 
       // Hash the new password
       const salt = await oBcrypt.genSalt(10);
