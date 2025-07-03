@@ -14,9 +14,9 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from jinja2 import Template
 from pyconfig.LogService import LogService
-from script_files.EmailService import EmailService
+from EmailService import EmailService
 from pyconfig import loadConfig
-from script_files.EmailSmtpClient import EmailSMTPClient
+from EmailSmtpClient import EmailSMTPClient
 import re
 path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
 sys.path.insert(0, path)
@@ -2102,6 +2102,45 @@ class model_common_Cls:
                 {"$set": uData}
             ))
             return oTemplateMetaDetails
+        except Exception as err:
+            LogService.log('Error : FunDCT_updateMetadataByTemplateID ' + str(err))
+            return None
+        
+
+    def FunDCT_GetAllActiveUsres(self):
+        try:
+            pipeline = [
+                        {
+                            "$lookup": {
+                                "from": "gen_statuses",
+                                "let": {"statusId": "$iStatusID"},
+                                "pipeline": [
+                                    {
+                                        "$match": {
+                                            "$expr": {
+                                                "$and": [
+                                                    {"$eq": ["$_id", "$$statusId"]},
+                                                    {"$eq": ["$cStatusCode", "ACTIVE"]}
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "as": "oStatusListing"
+                            }
+                        },
+                        {
+                            "$unwind": "$oStatusListing"
+                        },
+                        {
+                            "$project": {
+                                "cEmail": 1,
+                                "lastPasswordReset": 1
+                            }
+                        }
+                    ]
+            activeUsers = list(self.oPyDB.gen_users.aggregate(pipeline))
+            return activeUsers
         except Exception as err:
             LogService.log('Error : FunDCT_updateMetadataByTemplateID ' + str(err))
             return None

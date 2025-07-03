@@ -40,15 +40,15 @@ const fs = require("fs");
 dotenv.config();
 //code added by spirgonde for insert profile image to s3 bucket  end
 
-const router: Router = Router();
+// const router: Router = Router();
 
 export class GenUserService {
 
   private encryptedPassword: string; //code added by spirgonde
 
-  private _router = Router();
+  // private _router = Router();
   private _oCommonCls = new ClsDCT_Common();
-  private _oManageTemplateCls = new ClsDCT_User();
+  // private _oManageTemplateCls = new ClsDCT_User();
 
 
   public _oStorage: any;
@@ -69,21 +69,21 @@ export class GenUserService {
 
 
   constructor() {
-    this._oStorage = multer.diskStorage({
-      destination: (oReq, file, cb) => {
-        cb(null, this._oCommonCls.cDirProfileImagePath);
-      },
-      filename: (oReq, file, cb) => {
-        let cOriginalFileName = file.filename.split('.').slice(0, -1).join('.');
-        this._cTempProfileImg = cOriginalFileName + '_' + Date.now();
-        this._cFileTypeProfileImage = file.filename.substring(file.filename.lastIndexOf('.'), file.filename.length)
-        cb(null, this._cTempProfileImg + this._cFileTypeProfileImage);
-      }
-    });
+    // this._oStorage = multer.diskStorage({
+    //   destination: (oReq, file, cb) => {
+    //     cb(null, this._oCommonCls.cDirProfileImagePath);
+    //   },
+    //   filename: (oReq, file, cb) => {
+    //     let cOriginalFileName = file.filename.split('.').slice(0, -1).join('.');
+    //     this._cTempProfileImg = cOriginalFileName + '_' + Date.now();
+    //     this._cFileTypeProfileImage = file.filename.substring(file.filename.lastIndexOf('.'), file.filename.length)
+    //     cb(null, this._cTempProfileImg + this._cFileTypeProfileImage);
+    //   }
+    // });
 
-    this._oFileUpload = multer({
-      storage: this._oStorage
-    });
+    // this._oFileUpload = multer({
+    //   storage: this._oStorage
+    // });
   }
 
 
@@ -214,7 +214,7 @@ export class GenUserService {
         200,
         resUser,
         oReq,
-        cToken
+        // cToken
       );
     } catch (err) {
       console.error("Error: ", err);
@@ -438,11 +438,11 @@ export class GenUserService {
     const { cUsername } = JSON.parse(event.body);
     try {
       this._oCommonCls.FunDCT_ApiRequest(event)
-      let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
-      if (!oStatus) {
-        throw new error
-      }
-      let iStatusID = oStatus._id;
+      // let oStatus = await Status.findOne({ cStatusCode: 'ACTIVE' }).lean() as IStatus;
+      // if (!oStatus) {
+      //   throw new error
+      // }
+      // let iStatusID = oStatus._id;
       let oUser = await User.findOne({ cUsername: cUsername }).lean() as IUser;
       if (oUser) {
         this._oCommonCls.FunDCT_SetRandomStr(6, 'iNumber');
@@ -478,7 +478,7 @@ export class GenUserService {
         }
       }
 
-      this._oCommonCls.log('FunDCT_GenerateOTP ApiRequest: ' + event)
+      // this._oCommonCls.log('FunDCT_GenerateOTP ApiRequest: ' + event)
 
     } catch (err) {
       return {
@@ -613,6 +613,7 @@ export class GenUserService {
           $set: {
             cPassword: hashedNewPassword,
             passwordHistory: updatedHistory,
+            lastPasswordReset: new Date(), // Update last password reset time
           },
         }
       );
@@ -653,7 +654,7 @@ export class GenUserService {
     iStatusCode: number,
     oDetails: any,
     req: Request,
-    cToken: string = ""
+    // cToken: string = ""
   ) {
     try {
       let cToken = req.headers?.['x-wwadct-token'] || req.headers?.['X-WWADCT-TOKEN'];

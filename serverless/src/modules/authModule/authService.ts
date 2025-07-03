@@ -3,10 +3,8 @@ import oBcrypt from "bcryptjs";
 import oJwt from "jsonwebtoken";
 import User, { IUser } from "../../models/GenUser";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
-import { ClsDCT_Common } from "../../commonModule/Class.common";
 
 export class AuthService {
-    private _oCommonCls = new ClsDCT_Common();
 
   private cJwtSecret: string;
   private cJwtExpiration: string;
@@ -40,15 +38,15 @@ export class AuthService {
   }
 
   public validateUser = async (cUsername: string, cPassword: string) => {
-    await this._oCommonCls.checkAndSendPasswordExpiryEmails();
     let user = await User.findOne({ cUsername });
     if (!user) {
       return { error: "INVALID_USER" };
     }
 
-    if (!user.passwordHistory || user.passwordHistory.length === 0) {
+    if (!user.passwordHistory || user.passwordHistory.length === 0 || !user.lastPasswordReset) {
       return { error: "Invalid PasswordHistory" };
     }
+
 
     const isMatch = await oBcrypt.compare(cPassword, user.cPassword);
     if (!isMatch) {

@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from script_files.EmailBaseClient import EmailBaseClient
+from EmailBaseClient import EmailBaseClient
 from pyconfig import loadConfig
 from pyconfig.LogService import LogService
 
