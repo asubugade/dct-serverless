@@ -32,7 +32,7 @@ import axios from 'axios';
 import TmplConsolidationReq from "../models/TmplConsolidationReq"
 import MemberSubmissionDownloadLogSchema from "../models/MemberSubmissionDownloadLog"
 import moment from "moment";
-import { ClsDCT_EmailTemplate } from "./Class.emailtemplate";
+// import { ClsDCT_EmailTemplate } from "./Class.emailtemplate";
 
 export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cRandomUnique: string;//used for general random string
@@ -60,7 +60,7 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
     public cMemberEmail: string;
     public cCurrentAPIrequest: string
     public currentStreamName: string;
-    private mailTemplate = new ClsDCT_EmailTemplate()
+    // private mailTemplate = new ClsDCT_EmailTemplate()
 
     // private clsDCT_ManageTemplate = new ClsDCT_ManageTemplate()
 
@@ -1418,7 +1418,9 @@ export class ClsDCT_Common extends ClsDCT_ConfigIntigrations {
                 };
 
                 try {
-                    await this.mailTemplate.sendMail(mailOptions);
+                    console.log(`Sending email to ${user.cEmail} days left ${daysLeft} with subject: ${subject}`);
+                    
+                    // await this.mailTemplate.sendMail(mailOptions);
                 } catch (err) {
                     this.log(`Failed to send email to ${user.cEmail}: ${err}`);
                 }
