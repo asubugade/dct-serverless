@@ -3,8 +3,10 @@ from datetime import datetime, timedelta
 # import smtplib
 # from email.mime.text import MIMEText
 from pyconfig.model_common import model_common_Cls
+from EmailService import EmailService
+from EmailSmtpClient import EmailSMTPClient
 
-
+smtp_client = EmailSMTPClient()
 model_common = model_common_Cls()
 
 def check_and_send_password_expiry_emails():
@@ -22,7 +24,10 @@ def check_and_send_password_expiry_emails():
         expiry_date = last_reset + timedelta(days=90)
         days_left = (expiry_date - today).days
 
-        if days_left in [7, 3, 0]:
+        if days_left in [89,7, 3, 0]:
+            if days_left == 89:
+                subject = 'Password Expiry Reminder: 7 Days Left'
+                message = 'Your password will expire in 7 days. Please reset it to maintain access.'
             if days_left == 7:
                 subject = 'Password Expiry Reminder: 7 Days Left'
                 message = 'Your password will expire in 7 days. Please reset it to maintain access.'
@@ -33,7 +38,31 @@ def check_and_send_password_expiry_emails():
                 subject = 'Password Expired Today'
                 message = 'Your password expires today. Please reset it immediately.'
 
-            # send_email(user.get('cEmail'), subject, message)
+            # Prepare email parameters
+            templateAsHTML = f"<html><body><p>{message}</p></body></html>"
+            trigger = "PasswordExpiryNotification"
+            title = subject
+            user_email = "aditysubugade05@gmail.com"  # This is usually the sender email
+
+            toEmails = [user.get('cEmail')] if user.get('cEmail') else []
+            # toEmails =['jraisoni@shipco.com']
+            ccEmails = []
+            bccEmails = []
+            metadata = {}
+
+            # Example: smtp_client is assumed to be created somewhere globally
+            EmailService.sendTemplatedEmail(
+                templateAsHTML,        # templateAsHTML (HTML email body)
+                trigger,               # trigger (string identifier)
+                title,                 # title (email subject)
+                user_email,            # user_email (from)
+                metadata,              # metadata (optional additional data)
+                smtp_client,           # client (email client instance)
+                toEmails,              # toEmails (list)
+                ccEmails,              # ccEmails (list)
+                bccEmails,             # bccEmails (list)
+                None                   # notification_email (optional)
+            )
             print(f"Sending email to {user.get('cEmail')} - Days left: {days_left} - Subject: {subject}")
 
 # def send_email(to_email, subject, body):
