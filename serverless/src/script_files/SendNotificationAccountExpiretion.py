@@ -24,17 +24,14 @@ def check_and_send_password_expiry_emails():
         expiry_date = last_reset + timedelta(days=90)
         days_left = (expiry_date - today).days
 
-        if days_left in [89,7, 3, 0]:
-            if days_left == 89:
-                subject = 'Password Expiry Reminder: 7 Days Left'
-                message = 'Your password will expire in 7 days. Please reset it to maintain access.'
+        if days_left in [7, 3, 0]:
             if days_left == 7:
                 subject = 'Password Expiry Reminder: 7 Days Left'
                 message = 'Your password will expire in 7 days. Please reset it to maintain access.'
             elif days_left == 3:
                 subject = 'Password Expiry Reminder: 3 Days Left'
                 message = 'Your password will expire in 3 days. Reset it soon to avoid interruption.'
-            else:  # days_left == 0
+            elif days_left == 0:  # days_left == 0
                 subject = 'Password Expired Today'
                 message = 'Your password expires today. Please reset it immediately.'
 

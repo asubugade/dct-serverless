@@ -3,6 +3,7 @@ import oBcrypt from "bcryptjs";
 import oJwt from "jsonwebtoken";
 import User, { IUser } from "../../models/GenUser";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
+import moment from "moment";
 
 export class AuthService {
 
@@ -42,8 +43,10 @@ export class AuthService {
     if (!user) {
       return { error: "INVALID_USER" };
     }
-
-    if (!user.passwordHistory || user.passwordHistory.length === 0 || !user.lastPasswordReset) {
+    const expiryDate = moment(user.lastPasswordReset).add(90, 'days');
+    const today = moment().startOf('day');
+    const daysLeft = expiryDate.diff(today, 'days');    
+    if (!user.passwordHistory || user.passwordHistory.length === 0 || !user.lastPasswordReset || daysLeft <= 0) {
       return { error: "Invalid PasswordHistory" };
     }
 
