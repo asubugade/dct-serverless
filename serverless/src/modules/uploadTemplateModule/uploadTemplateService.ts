@@ -26,11 +26,15 @@ export class UploadTemplateService {
     public uploadTemplate = async (formData, event) => {
         try {
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- Start')
-            const { iTemplateID, tCuttoffdate, cSelectedMembers, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, cUploadType, cTemplateType, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex } = formData;
-            const aReqDetails = { iTemplateID, tCuttoffdate, cSelectedMembers, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, cUploadType, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex }
+            const { iTemplateID, tCuttoffdate, cSelectedMembers, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, cUploadType, cTemplateType, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex, tScheduledDate } = formData;
+            const aReqDetails = { iTemplateID, tCuttoffdate, cSelectedMembers, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, cUploadType, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex, tScheduledDate }
             var tNow = new Date(tCuttoffdate);
             const tCutoffConverted: string = moment(tNow).format('YYYY-MM-DD HH:mm:ss');
-            const aTmplMetaData = { iTemplateID, tCuttoffdate: tCutoffConverted, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, startHeaderRowIndex }
+            const aTmplMetaData = { iTemplateID, tCuttoffdate: tCutoffConverted, cEmailSubject, cEmailFrom, cEmailTemplateID, cEmailText, cAdditionalEmail, startHeaderRowIndex, tScheduledDate: tScheduledDate == undefined ? null : tScheduledDate }
+            if (tScheduledDate && tScheduledDate !== null) {
+                const tScheduledDateConverted: string = moment(tScheduledDate).format('YYYY-MM-DD HH:mm:ss');
+                aTmplMetaData.tScheduledDate = tScheduledDateConverted;
+            }
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- aTmplMetaData')
             let oTemplate = await TmplMetaData.findOne({ iTemplateID: iTemplateID }).lean() as ITmplMetaData;
             if (oTemplate) {
@@ -81,11 +85,11 @@ export class UploadTemplateService {
             const oTemplateDetails = await this._oCommonCls.FunDCT_GetTemplateDetails(iTemplateID);
 
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplateDetails')
-            const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, cTemplateFile: cRenamedFile, iActiveStatus: 0, tCuttoffdate, cSelectedMembers: JSON.parse(cSelectedMembers), cUploadType: 'DISTRIBUTE', bProcesslock: 'N', cEmailSubject, cEmailFrom, cEmailText, cAdditionalEmail, iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalFile: cAddtionalFile, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex };
+            const aRequestDetails = { iTemplateID, cTemplateName: oTemplateDetails[0].cTemplateName, cTemplateFile: cRenamedFile, iActiveStatus: 0, tCuttoffdate, cSelectedMembers: JSON.parse(cSelectedMembers), cUploadType: 'DISTRIBUTE', bProcesslock: 'N', cEmailSubject, cEmailFrom, cEmailText, cAdditionalEmail, iStatusID: oStatus._id, iEnteredby: event.requestContext.authorizer._id, tEntered: new Date(), cAddtionalFile: cAddtionalFile, aTemplateFileName, aTemplateFileSize, startHeaderRowIndex, tScheduledDate };
             let oTemplates = new TmplUploadLog(aRequestDetails);
             const tmplUploadLogDetail = await oTemplates.save();
             this._oCommonCls.log('"FunDCT_SaveUploadTemplate --- oTemplates.save')
-            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, tmplUploadLogDetail , "TemplateUpload")
+            await this.clsDCT_ManageTemplate.addUpdateDataIntoGenLaneAndGenLaneSchedule(cTemplateType, event.requestContext.authorizer._id, tmplUploadLogDetail, "TemplateUpload")
             return await this._oCommonCls.FunDCT_Handleresponse('Success', 'UPLOAD_TEMPLATE', 'TEMPLATE_REQUEST_SUBMITTED', 200, oTemplates);
         } catch (err) {
             this._oCommonCls.log(err)

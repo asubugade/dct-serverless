@@ -145,6 +145,7 @@ export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilte
                 'oTemplateMetaDataListing.startHeaderRowIndex': 1,
                 'oTemplateMetaDataListing.iTemplateID': 1,
                 'oTemplateMetaDataListing.tCuttoffdate': 1,
+                'oTemplateMetaDataListing.tScheduledDate': 1,
                 'oTemplateMetaDataListing.tEntered': 1,
                 'oTemplateTypeDataListing.preFillData': 1,
                 'oTemplateTypeDataListing.cTemplateType': 1
@@ -187,7 +188,9 @@ export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilte
         const enrichedDocuments = await Promise.all(
             oDocuments.map(async doc => {
                 let cutoffDate;
+                let scheduledDate;
                 let totalSeconds = null;
+                let scheduledTotalSeconds = null;
                 let aConsolidationDataList;
                 try {
                     aConsolidationDataList = await getConsolidationData(doc);
@@ -198,10 +201,15 @@ export const getTemplate = async (aRequestDetails: any, oSort: any, cSearchFilte
                     cutoffDate = moment(doc.oTemplateMetaDataListing.tCuttoffdate);
                     totalSeconds = cutoffDate.diff(moment(), 'seconds');
                 }
+                if (doc.oTemplateMetaDataListing.tScheduledDate) {
+                    scheduledDate = moment(doc.oTemplateMetaDataListing.tScheduledDate);
+                    scheduledTotalSeconds = scheduledDate.diff(moment(), 'seconds');
+                }
 
                 return {
                     ...doc,
                     cutoffCoutdownTimer: totalSeconds,
+                    scheduledCoutdownTimer: scheduledTotalSeconds,
                     aConsolidationDataList: aConsolidationDataList,
                 };
             })

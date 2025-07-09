@@ -87,6 +87,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
     public _cTemplateCommentsFileJSON: any; //Template Validation Success/Error Message Json
 
     public tCuttoffdate: any;//added by stewari
+    public tScheduledDate: any; //added by stewari
     public consolidateTemplate = new ClsDCT_ConsolidateTemplate()
     public _oEmailTemplateCls: any = new ClsDCT_EmailTemplate();
     private _oCommonCls = new ClsDCT_Common();
@@ -303,6 +304,10 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
         return this.tCuttoffdate.toString();
     }
 
+    public FunDCT_GetScheduledDate() {
+        return this.tScheduledDate !== null ? this.tScheduledDate.toString() : this.tScheduledDate;
+    }
+
     /**
      * added by stewari
      * To Set Cutoff Date 
@@ -310,6 +315,10 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
      */
     public FunDCT_SetCuttoffdate(tCuttoffdate: any) {
         this.tCuttoffdate = tCuttoffdate.toString();
+    }
+
+    public FunDCT_SetScheduledDate(tScheduledDate: any) {
+        this.tScheduledDate = tScheduledDate !== null ? tScheduledDate.toString() : tScheduledDate;
     }
 
     /**
@@ -1637,6 +1646,8 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             this.FunDCT_setUserID('0001')
             let stream = `/CRON/VALIDATE_TEMPLATE_CONTENT/`
             const oPendingUpload: any = await this.getTemplateUpload(tmplUploadLogId);
+            console.log("oPendingUpload======================>", oPendingUpload);
+
             if (typeof oPendingUpload === 'undefined' || oPendingUpload == false) {
                 return "Files In Progress or No Pending Files";
             }
@@ -1644,6 +1655,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             stream = stream + iTemplateID
             this.FunDCT_ApiRequest({ baseUrl: stream })
             let tCutoffConverted: any;
+            let tScheduledDateConverted: any;
             let cTemplateType: any;
             await this.FunDCT_SetCurrentUserDetailsByID(oPendingUpload.iEnteredby);
             let oCurrentUserDetails = await User.findOne({ _id: new mongoose.Types.ObjectId(oPendingUpload.iEnteredby) }).lean() as IUser;
@@ -1662,6 +1674,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             let oAdditionalConfiguration;
             if (oTemplate && oTemplateMetaData) {
                 tCutoffConverted = oTemplateMetaData.tCuttoffdate;
+                tScheduledDateConverted = oTemplateMetaData.tScheduledDate;
                 cTemplateType = oTemplate.cTemplateType;
                 if (oTemplateMetaData.aAdditionalConfiguration[0]['cAdditionalFields']) {
                     if (oTemplateMetaData.aAdditionalConfiguration[0]['cAdditionalFields'].length > 0) {
@@ -1673,6 +1686,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
             }
 
             this.FunDCT_SetCuttoffdate(tCutoffConverted);//added by stewari
+            this.FunDCT_SetScheduledDate(tScheduledDateConverted);//added by stewari
             this.FunDCT_SetTemplateType(cTemplateType);//added by stewari
 
             if (this._cUploadType == 'DISTRIBUTE') {
@@ -1723,6 +1737,7 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                 const oParams = {
                     iTemplateID: iTemplateID,
                     tCuttoffdate: (this._cUploadType == 'DISTRIBUTE') ? this.FunDCT_GetCuttoffdate() : '0000-00-00',//added by stewari
+                    tScheduledDate: (this._cUploadType == 'DISTRIBUTE') ? this.FunDCT_GetScheduledDate() : '0000-00-00',//added by stewari
                     cFileDir: cFileDir, cFileName: this._cTempFileUploadTemplate, cFileType: this._cFileTypeUploadTemplate,
                     cSampleTemplateFileDir: this.cDirTemplateSampleFile, cSampleTemplateFile: 'CREATE_TEMPLATE-SAMPLE-' + iTemplateID, cSampleFileType: this._cFileTypeUploadTemplate,
                     cDirValidateTemplateHeaderLevel: cDirTemplateHeaderLevel, _cValidateTemplateFileJSON: '',
@@ -1740,8 +1755,8 @@ export class ClsDCT_ManageTemplate extends ClsDCT_Common {
                     cType: stream,
                     preFillData: oTemplateType.preFillData,
                     startHeaderRowIndex: this._oGetTemplateMetaDataDetails[0]['startHeaderRowIndex'],
-                    oRequestedByUserDetails: oRequestedByUserDetails,
-                };
+                    oRequestedByUserDetails: oRequestedByUserDetails
+                };                
 
                 laneSchedule.push({
                     iTemplateTypeID: iTemplateTypeID,

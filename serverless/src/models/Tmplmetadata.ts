@@ -44,6 +44,7 @@ export interface ITmplMetaData extends Document {
   startHeaderRowIndex: Number
   cQuotingMembers: JSON;
   tCuttoffdate: string;
+  tScheduledDate: string | null;
   cDistributionStatus: string;
   iRedistributedIsUploaded: string;
   // tCuttoffdate: Date;
@@ -117,6 +118,10 @@ const TmplMetaDataSchema: Schema = new Schema({
   },
   tCuttoffdate: {
     type: String
+  },
+  tScheduledDate: {
+    type: String,
+    default: null,
   },
   cDistributionStatus: {
     type: String,
