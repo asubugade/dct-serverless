@@ -1,0 +1,363 @@
+service: templates
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Middleware
+
+  GetValidatePermission:
+   handler: src/middleware/auth.FunDCT_ValidatePermission
+   timeout: 900
+
+
+
+
+#Create Template Module Routes
+  excelToJson:
+      handler: src/modules/createTemplateModule/handler.excelToJsonHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/createtemplate/exceltojson
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  addCreateTemplates:
+      handler: src/modules/createTemplateModule/handler.addTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/createtemplate/add
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+  deleteTemplate:
+      handler: src/modules/createTemplateModule/handler.deleteTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/createtemplate/{id}
+            method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  
+#List Template Module Routes
+  listbytemplatetype:
+    handler: src/modules/listTemplateModule/handler.listByTemplateType
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/listbytemplatetype
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  ListTemplateList:
+    handler: src/modules/listTemplateModule/handler.listHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  listAllTemplateNames:
+    handler: src/modules/listTemplateModule/handler.listAllTemplateNamesHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/listAllTemplateNames
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  listByTemplateTimer:
+    handler: src/modules/listTemplateModule/handler.listByTemplateTimerHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/listbytemplatetimer
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  listNoTimer:
+    handler: src/modules/listTemplateModule/handler.listNoTimerHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/listnotimer
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  downloadSampleTemplate:
+    handler: src/modules/listTemplateModule/handler.downloadSampleTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/downloadsampletemplate
+          method: post
+          cors: true
+          # authorizer:
+          #   name: GetValidatePermission
+          #   identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+          #   resultTtlInSeconds: 0
+          #   type: request
+
+
+  getTemplateDetails:
+    handler: src/modules/listTemplateModule/handler.getTemplateDetailsHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/getTemplateDetails
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  getMemberUploadLog:
+    handler: src/modules/listTemplateModule/handler.getMemberUploadLogHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/getmemberuploadlog
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  checkTemplatePath:
+    handler: src/modules/listTemplateModule/handler.checkTemplatePathHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/checktemplatepath
+          method: post
+          cors: true
+
+
+  updateTemplateDocument:
+    handler: src/modules/listTemplateModule/handler.updateTemplateDocumentHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/listtemplate/{id}
+          method: put
+          cors: true
+          # authorizer:
+          #   name: GetValidatePermission
+          #   identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+          #   resultTtlInSeconds: 0
+          #   type: request
+
+
+
+#Upload Template Module Routes
+
+  uploadTemplate:
+      handler: src/modules/uploadTemplateModule/handler.uploadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/uploadtemplate/add
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+  updateStatDocument:
+      handler: src/modules/uploadTemplateModule/handler.updateStatDocumentHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/uploadtemplate/{id}
+            method: put
+            cors: true
+            # authorizer:
+            #   name: GetValidatePermission
+            #   identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            #   resultTtlInSeconds: 0
+            #   type: request
+
+
+#Template Upload Log Module Routes
+  listByTemplateType:
+      handler: src/modules/templateUploadLogModule/handler.listByTemplateTypeHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/templateuploadlog/listbytemplatetype
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  listTemplateUploadLog:
+      handler: src/modules/templateUploadLogModule/handler.templateUploadLogListHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/templateuploadlog/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  deleteTemplateUploadLog:
+      handler: src/modules/templateUploadLogModule/handler.deleteTemplateUploadLogHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/templateuploadlog/{id}
+            method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+#Template Type Module Routes
+
+  templateList:
+    handler: src/modules/templateTypeModule/handler.templateListHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/templatetype/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  addTemplate:
+    handler: src/modules/templateTypeModule/handler.addTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/templatetype/add
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  updateTemplate:
+    handler: src/modules/templateTypeModule/handler.updateTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/templatetype/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  deleteTemplateType:
+    handler: src/modules/templateTypeModule/handler.deleteTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/templatetype/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request  
+
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)
+  

@@ -1,0 +1,82 @@
+service: consolidation
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Middleware
+
+  GetValidatePermission:
+   handler: src/middleware/auth.FunDCT_ValidatePermission
+   timeout: 900
+
+
+#Consolidate Template Module Routes
+
+  consolidateTemplateList:
+      handler: src/modules/consolidateTemplateModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  consolidateTemplateFind:
+      handler: src/modules/consolidateTemplateModule/handler.consolidateTemplateFindHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/find
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  downloadConsolidateReport:
+      handler: src/modules/consolidateTemplateModule/handler.downloadConsolidateReportHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/consolidatetemplate/downloadConsolidateReport
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)

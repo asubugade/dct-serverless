@@ -1,0 +1,56 @@
+service: python
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+  validatePython:
+      handler: src/python/validateUploadTemplate.handler  # Points to Python code
+      runtime: python3.12  # Python runtime
+      timeout: 900
+      events:
+        - http:
+            path: api/validateuploadtemplate
+            method: post
+            cors: true
+
+
+          
+  createTemplateFilePython:
+      handler: src/python/createFiles.handler  # Points to Python code
+      runtime: python3.12  # Python runtime
+      timeout: 900
+      events:
+        - http:
+            path: api/createfiles
+            method: post
+            cors: true
+
+
+
+  exportListingPython:
+      handler: src/python/exportListing.handler  # Points to Python code
+      runtime: python3.12  # Python runtime
+      timeout: 900
+      events:
+        - http:
+            path: api/exportlisting
+            method: post
+            cors: true
+
+
+
+plugins:
+  - serverless-offline
+  - serverless-python-requirements
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)

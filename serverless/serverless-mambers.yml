@@ -1,0 +1,301 @@
+service: members
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Middleware
+
+  GetValidatePermission:
+   handler: src/middleware/auth.FunDCT_ValidatePermission
+   timeout: 900
+
+
+#Member Module Routes
+
+  memberTemplateType:
+    handler: src/modules/memberModule/handler.memberTemplateTypeHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/member/membertemplatetype
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  memberList:
+    handler: src/modules/memberModule/handler.memberListHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/member/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+  addMember:
+    handler: src/modules/memberModule/handler.addMemberHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/member/add
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  updateMember:
+    handler: src/modules/memberModule/handler.updateMemberHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/member/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  deleteMember:
+    handler: src/modules/memberModule/handler.deleteMemberHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/member/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+
+#Member Restriction Module Routes
+
+  memberRestrictionList:
+    handler: src/modules/memberRestrictionModule/handler.listHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/memberrestriction/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  addMemberRestriction:
+    handler: src/modules/memberRestrictionModule/handler.addMemberRestrictionHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/memberrestriction/add
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  updateMemberRestriction:
+    handler: src/modules/memberRestrictionModule/handler.updateMemberRestrictionHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/memberrestriction/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request          
+
+
+  deleteMemberRestriction:
+    handler: src/modules/memberRestrictionModule/handler.deleteMemberRestrictionHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/memberrestriction/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+
+# Member Submission Module Routes
+
+  memberSubmissionlist:
+      handler: src/modules/memberSubmissionModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  memberSubmissionFind:
+      handler: src/modules/memberSubmissionModule/handler.memberSubmissionFindHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/find
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  downloadMemberSubmission:
+      handler: src/modules/memberSubmissionModule/handler.downloadMemberSubmissionHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/membersubmissiontemplate/downloadMemberSubmission
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+
+
+#Member Upload Module Routes
+
+  memberUploadList:
+      handler: src/modules/memberUploadModule/handler.listHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/list
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+  downloadTemplate:
+      handler: src/modules/memberUploadModule/handler.downloadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/downloadtemplate
+            method: post
+            cors: true
+
+  
+  deleteMemberUploadLog:
+      handler: src/modules/memberUploadModule/handler.deleteMemberUploadLogHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/{id}
+            method: delete
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+  memberUploadTemplate:
+      handler: src/modules/memberUploadModule/handler.memberUploadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberuploadtemplate/add
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+#Member Admin Upload Module Routes
+
+  memberAdminUploadTemplate:
+      handler: src/modules/memberAdminUploadModule/handler.memberUploadTemplateHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/memberadminuploadtemplate/add
+            method: post
+            cors: true
+            authorizer:
+              name: GetValidatePermission
+              identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+              resultTtlInSeconds: 0
+              type: request
+
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)
+
+
+  

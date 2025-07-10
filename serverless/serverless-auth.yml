@@ -1,0 +1,48 @@
+service: auth
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Auth Module Routes    
+
+  login:
+    handler: src/modules/authModule/handler.loginHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/auth
+          method: post
+          cors: true
+
+  getUser:
+    handler: src/modules/authModule/handler.getUserHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/auth
+          method: get
+          cors: true
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)

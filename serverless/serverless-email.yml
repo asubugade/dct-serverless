@@ -1,0 +1,112 @@
+service: email
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Middleware
+
+  GetValidatePermission:
+   handler: src/middleware/auth.FunDCT_ValidatePermission
+   timeout: 900
+
+
+
+#Email Template Module Routes
+
+  emailTemplateList:
+    handler: src/modules/emailTemplateModule/handler.listHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/emailtemplate/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  addEmailTemplate:
+    handler: src/modules/emailTemplateModule/handler.addEmailTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/emailtemplate/add
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  updateEmailTemplate:
+    handler: src/modules/emailTemplateModule/handler.updateEmailTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/emailtemplate/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  deleteEmailTemplate:
+    handler: src/modules/emailTemplateModule/handler.deleteEmailTemplateHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/emailtemplate/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+
+#Send Email Reminder Module Routes
+
+
+  sendEmailReminder:
+      handler: src/modules/sendEmailReminderModule/handler.sendEmailReminderHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/sendemailreminder/send
+            method: post
+            cors: true
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)            
+

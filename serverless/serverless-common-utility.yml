@@ -1,0 +1,58 @@
+service: common-utility
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+# Common Utility Modules Routes
+
+  downloadS3File:
+      handler: src/modules/commonUtilityModule/handler.downloadS3FileHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/downloadS3File
+            method: post
+            cors: true
+
+
+  listExport:
+      handler: src/modules/commonUtilityModule/handler.listExportHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/sheet
+            method: post
+            cors: true
+
+
+  sendInstruction:
+      handler: src/modules/commonUtilityModule/handler.sendInstructionHandler
+      timeout: 900
+      events:
+        - http:
+            path: api/commonutility/sendInstruction
+            method: post
+            cors: true
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)

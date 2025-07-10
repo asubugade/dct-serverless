@@ -1,0 +1,147 @@
+service: users
+
+dashboard:
+  disableMonitoring: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment: ${file(./config.yml):environment}
+
+functions:
+
+#Middleware
+  GetUserPermissions:
+    handler: src/middleware/auth.FunDCT_GetUserPermissions
+    timeout: 900
+
+  GetValidatePermission:
+   handler: src/middleware/auth.FunDCT_ValidatePermission
+   timeout: 900
+
+
+#Users Module Routes
+
+  
+  list:
+    handler: src/modules/userModule/handler.listHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/list
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request  
+
+
+
+  profile:
+    handler: src/modules/userModule/handler.profileHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/profile
+          method: post
+          cors: true
+          authorizer:
+            name: GetUserPermissions
+            identitySource: method.request.header.x-wwadct-token
+            resultTtlInSeconds: 0
+            type: request
+
+
+  addUser:
+    handler: src/modules/userModule/handler.addUserHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/add
+          method: post
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  updateUser:
+    handler: src/modules/userModule/handler.updateUserHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request
+
+
+  deleteProfile:
+    handler: src/modules/userModule/handler.deleteProfileHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: GetValidatePermission
+            identitySource: "method.request.header.x-wwadct-token,method.request.header.action,method.request.header.resource"
+            resultTtlInSeconds: 0
+            type: request                               
+
+
+  generateOTP:
+    handler: src/modules/userModule/handler.generateOTPHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/generateOTP
+          method: post
+          cors: true
+
+
+  verifyOTP:
+    handler: src/modules/userModule/handler.verifyOTPHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/verifyOTP
+          method: post
+          cors: true
+
+
+  forgotPass:
+    handler: src/modules/userModule/handler.forgotPassHandler
+    timeout: 900
+    events:
+      - http:
+          path: api/user/forgotPass
+          method: post
+          cors: true
+
+
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+  - serverless-middleware
+  - serverless-plugin-warmup
+
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: rate(5 minutes)
